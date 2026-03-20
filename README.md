@@ -1,59 +1,36 @@
 # ShellRPG-www
 
 **Governance:** CLIENT-PUBLIC  
-**Sichtbarkeit:** veröffentlichbar  
-**Baseline-Version:** `0.0.1a`
+**Visibility:** public  
+**Version:** `v0.0.2`
 
-## Zweck
+Grafischer Public Client für **Bauphase B / Vertical Slice**.
 
-`ShellRPG-www` ist der vollwertige grafische Web-Client für denselben serverautoritiven Kern wie `ShellRPG-client`.
+## Enthalten
 
-Dieser Foundations-Stand enthält:
+- echte Verbindung zum lokalen autoritativen Demo-Server
+- Status-, Karten-, Inventar-, Markt- und Journal-Panels
+- Befehlseingabe für `look`, `inspect`, `walk`, `gather`, `hunt`, `explore`
+- redigierte Command-/Review-Spiegelung
 
-- modulare Seiten- und Feature-Struktur
-- Grundlayout für Dashboard, Karte, Inventar, Markt und Journal
-- UX-Grundlinien
-- i18n-Struktur
-- harmlose Admin-Review-Stub-Oberflächen
-- Packaging- und Dokumentationsbasis
+## Start
 
-## Foundations-Entscheidung
+1. Server starten:
 
-Dieser Stand verwendet absichtlich **vanilla HTML/CSS/ES modules** als leichtgewichtige Foundations-Basis.  
-Damit bleibt Bauphase A:
+```bash
+python -m shellrpg_server
+```
 
-- transparent
-- sofort lesbar
-- bundler-unabhängig
-- leicht in späteres Framework-Migration-Design überführbar
+2. WWW statisch ausliefern:
 
-Ein späterer Wechsel zu React/Vue/Svelte bleibt möglich, ohne Artefaktgrenzen neu zu ziehen.
+```bash
+python -m http.server 8080
+```
 
-## Struktur
+3. Browser öffnen:
 
-- `public/index.html` – Einstiegsseite
-- `src/app.js` – Modulstart
-- `src/features/` – Karten-, Status-, Markt-, Inventar- und Review-Skelette
-- `src/i18n/` – Sprachschlüssel
-- `docs/` – UX-, Architektur- und Accessibility-Notizen
+`http://127.0.0.1:8080/public/index.html`
 
-## Revisions- und Versionsregel
+## Hinweis
 
-Reine Fixes erhöhen die Versionsnummer nicht.
-
-## Nächste empfohlene Phase
-
-- echte Session-Anbindung
-- Kartenansicht mit FOW-Stufen
-- Status- und Aktionspanels
-- Marktübersicht
-- Journal / Questpane
-- Reviewliste für Rätsel im redigierten Public-Umfang
-
-## Wichtige Dateien
-
-- `shellrpg.manifest.toml`
-- `public/index.html`
-- `src/app.js`
-- `src/features/map/mapView.js`
-- `docs/www-ux-foundations.md`
+Dieser Slice ist bewusst buildarm gehalten: kein Node-Tooling, keine Bundlerpflicht, nur ein lokaler statischer Start für schnelle Revisionen.

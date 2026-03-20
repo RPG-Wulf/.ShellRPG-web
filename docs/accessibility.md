@@ -1,8 +1,7 @@
-# Accessibility Foundations
+# Accessibility
 
-## Vorgaben
-- hoher Kontrast
-- Tastaturbedienbarkeit
-- Animation nie exklusiv
-- semantische Überschriften
-- klare Paneltrennung
+Phase B hält die Oberflächen bewusst einfach:
+- klare Kontraste
+- wenig Animation
+- textnahe Panels
+- Eingabe per Tastatur möglich

@@ -1,16 +1,6 @@
 # WWW UX Foundations
 
-## Leitbild
-- papyrusartig
-- dunkel
-- lesbar
-- dual-client-kompatibel
-- servergleich, nicht serverstärker
+## Phase B
 
-## Panels
-- Status
-- Karte
-- Inventar
-- Markt
-- Journal
-- harmlose Reviewoberflächen
+Der WWW-Client ist jetzt ein echter zweiter Public Client für den Vertical Slice.
+Er zeigt denselben autoritativen Zustand wie der Terminal-Client, nur grafisch strukturierter.

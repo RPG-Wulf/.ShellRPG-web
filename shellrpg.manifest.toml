@@ -1,7 +1,7 @@
 artifact_name = "ShellRPG-www"
 governance_layer = "CLIENT-PUBLIC"
 visibility = "public"
-version = "0.0.1a"
+version = "0.0.2"
 artifact_role = "web client"
 release_policy = "fixes_do_not_bump_version"
 publicly_releasable = true

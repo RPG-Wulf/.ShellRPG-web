@@ -1,7 +1,9 @@
-export function renderJournalPanel(mountNode) {
+export function renderJournalPanel(mountNode, journal = []) {
   if (!mountNode) return;
   mountNode.innerHTML = `
     <h2>Journal</h2>
-    <p class="small">Quest-, Ereignis- und Reisehistorie im Web-Client.</p>
+    <ul class="list">
+      ${journal.map((entry) => `<li>${entry}</li>`).join("")}
+    </ul>
   `;
 }

@@ -2,19 +2,29 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>ShellRPG-www Foundations</title>
+    <title>ShellRPG-www Phase B</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="../src/styles/base.css" />
   </head>
   <body>
     <div id="app">
       <header class="hero">
-        <p class="eyebrow">ShellRPG-www · Foundations</p>
+        <p class="eyebrow">ShellRPG-www · Phase B Vertical Slice</p>
         <h1>Dual-Client Public Web Interface</h1>
         <p class="lede">
-          Servergleich zum Terminal-Client, aber grafisch lesbarer.
+          Verbunden mit demselben autoritativen Slice wie der Terminal-Client.
         </p>
       </header>
+
+      <section class="card controls">
+        <label for="command-input">Befehl</label>
+        <div class="controls-row">
+          <input id="command-input" type="text" value="look" />
+          <button id="run-command" type="button">Senden</button>
+          <button id="refresh-all" type="button">Neu laden</button>
+        </div>
+        <p class="small">Serverstandard: <code>http://127.0.0.1:8765</code></p>
+      </section>
 
       <main class="grid">
         <section id="status-panel" class="card"></section>

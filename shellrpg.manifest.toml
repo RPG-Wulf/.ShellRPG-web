@@ -1,0 +1,8 @@
+artifact_name = "ShellRPG-www"
+governance_layer = "CLIENT-PUBLIC"
+visibility = "public"
+version = "0.0.1a"
+artifact_role = "web client"
+release_policy = "fixes_do_not_bump_version"
+publicly_releasable = true
+server_contract_dependency = "ShellRPG-server public-safe contracts"

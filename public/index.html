@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>ShellRPG-www Foundations</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../src/styles/base.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="hero">
+        <p class="eyebrow">ShellRPG-www · Foundations</p>
+        <h1>Dual-Client Public Web Interface</h1>
+        <p class="lede">
+          Servergleich zum Terminal-Client, aber grafisch lesbarer.
+        </p>
+      </header>
+
+      <main class="grid">
+        <section id="status-panel" class="card"></section>
+        <section id="map-panel" class="card"></section>
+        <section id="inventory-panel" class="card"></section>
+        <section id="market-panel" class="card"></section>
+        <section id="journal-panel" class="card"></section>
+        <section id="review-panel" class="card"></section>
+      </main>
+    </div>
+    <script type="module" src="../src/app.js"></script>
+  </body>
+</html>

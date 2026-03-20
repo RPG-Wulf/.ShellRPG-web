@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark;
+  --bg: #11100f;
+  --paper: #1b1916;
+  --ink: #efe5cc;
+  --muted: #b7ab90;
+  --line: #423a2c;
+  --accent: #8c7350;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: ui-serif, Georgia, serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(140,115,80,0.12), rgba(17,16,15,0.6));
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.eyebrow { color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.lede { color: var(--muted); max-width: 72ch; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  min-height: 180px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+}
+
+.card h2 { margin-top: 0; font-size: 1.1rem; }
+.small { color: var(--muted); font-size: 0.95rem; }
+.pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}

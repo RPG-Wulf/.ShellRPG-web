@@ -1,36 +1,27 @@
 # ShellRPG-www
 
-**Governance:** CLIENT-PUBLIC  
-**Visibility:** public  
-**Version:** `v0.0.2`
+**Governance:** `CLIENT-PUBLIC`  
+**Release:** `v0.3.0`
 
-Grafischer Public Client für **Bauphase B / Vertical Slice**.
+## Rolle
+Vollwertiger zweiter Public Client gegen denselben serverautoritiven Slice wie der Terminal-Client.
 
-## Enthalten
+## Phase-D-Funktionen
+- Status-Panel mit GIF-Verlinkung
+- Kartenausschnitt mit Fog-of-War-Zuständen
+- Inventar/Ausrüstung
+- Händleransicht
+- Journal, Quests und Buffs
+- freie Command-Eingabe gegen denselben Server
 
-- echte Verbindung zum lokalen autoritativen Demo-Server
-- Status-, Karten-, Inventar-, Markt- und Journal-Panels
-- Befehlseingabe für `look`, `inspect`, `walk`, `gather`, `hunt`, `explore`
-- redigierte Command-/Review-Spiegelung
-
-## Start
-
-1. Server starten:
-
-```bash
-python -m shellrpg_server
-```
-
-2. WWW statisch ausliefern:
-
+## Lokaler Start
 ```bash
 python -m http.server 8080
 ```
-
-3. Browser öffnen:
-
-`http://127.0.0.1:8080/public/index.html`
+Dann im Browser öffnen:
+```text
+http://127.0.0.1:8080/public/index.html
+```
 
 ## Hinweis
-
-Dieser Slice ist bewusst buildarm gehalten: kein Node-Tooling, keine Bundlerpflicht, nur ein lokaler statischer Start für schnelle Revisionen.
+Der Kubus-Dialog läuft ebenfalls über den Server. Das WWW überträgt nur Befehle; der eigentliche OpenAI-Proxy bleibt privat.

@@ -1,27 +1,48 @@
-# ShellRPG-www
 
-**Governance:** `CLIENT-PUBLIC`  
-**Release:** `v0.3.0`
+# ShellRPG-server · v0.4.0
 
-## Rolle
-Vollwertiger zweiter Public Client gegen denselben serverautoritiven Slice wie der Terminal-Client.
+**Governance:** SERVER-PRIVAT  
+**Visibility:** owner-only / proprietär  
+**Phase:** E — Stadtgründung, Gouverneur, 5 Generäle, Miliz-/Garnisonslogik, überarbeitetes Kampf- und Auto-Battle-System
 
-## Phase-D-Funktionen
-- Status-Panel mit GIF-Verlinkung
-- Kartenausschnitt mit Fog-of-War-Zuständen
-- Inventar/Ausrüstung
-- Händleransicht
-- Journal, Quests und Buffs
-- freie Command-Eingabe gegen denselben Server
+## Enthalten
+- autoritativer lokaler Demo-Server auf `http://127.0.0.1:8765`
+- 4096×4096-Chunk-Weltgrundlage
+- Hybridkampf: Welt in Ticks, Kampf in Runden mit Reaktionsfenstern
+- Auto-Battle (`auto battle on|off|balanced|aggressive|defensive`)
+- Crafting / Socketing / Enchanting / Seelenstein-Schmiede
+- Händlerbefehle
+- Stadtgründung
+- Gouverneur + 5 Generäle
+- Milizrekrutierung
+- Tile-Buildings mit Kosten, Outputs, Konflikthinweisen
+- schwarzer Kubus mit serverseitigem Proxy und Offline-Fallback
 
-## Lokaler Start
+## Start
 ```bash
-python -m http.server 8080
-```
-Dann im Browser öffnen:
-```text
-http://127.0.0.1:8080/public/index.html
+python -m pip install -e .
+python -m shellrpg_server
 ```
 
-## Hinweis
-Der Kubus-Dialog läuft ebenfalls über den Server. Das WWW überträgt nur Befehle; der eigentliche OpenAI-Proxy bleibt privat.
+## Wichtige Testkommandos
+```text
+craft --item sword --material iron
+equip iron sword
+socket --slot weapon --gem ruby shard
+enchant --slot weapon
+auto battle on aggressive
+city found Morgenwacht
+city appoint governor Cassian
+city appoint general 1 Varek
+city build trade hall
+militia recruit swordfighters 2
+walk route cube
+cube enter
+```
+
+## Revisionsregel
+Reine Bug-/Build-Fixes erhöhen die Version nicht.  
+Diese Revision enthält neue funktionale Systeme und ist daher als **0.4.0 / v0.4.0** markiert.
+
+## Redaktionsgrenze
+Diese README erklärt Betrieb und Oberfläche des Demo-Slices, aber keine sensiblen Sicherheits- oder Integritätsheuristiken.

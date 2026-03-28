@@ -138,6 +138,10 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             length = int(self.headers.get("Content-Length", "0"))
             return self.rfile.read(length) if length else b""
 
+        # Erkennt denselben Live-Event-Stream wie der Browser-Client und leitet ihn ungepuffert weiter.
+        def _is_event_stream_request(self) -> bool:
+            return urlsplit(self.path).path == "/api/events" or "text/event-stream" in (self.headers.get("Accept", "") or "")
+
         def _serve_frontend(self) -> None:
             asset = resolve_frontend_asset(root, self.path)
             if asset is None:
@@ -169,6 +173,9 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 headers=headers,
                 method=self.command,
             )
+            if self._is_event_stream_request():
+                self._proxy_event_stream(request)
+                return
             try:
                 with urlopen(request, timeout=config.request_timeout_seconds) as response:
                     status = response.status
@@ -204,6 +211,52 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                     raw_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                     content_type = "application/json; charset=utf-8"
             self._write_bytes(raw_body, content_type, status=status, extra_headers=extra_headers)
+
+        # Leitet SSE-Bytes direkt weiter, damit der WWW-Gateway Live-Updates same-origin an den Browser reicht.
+        def _proxy_event_stream(self, request: Request) -> None:
+            try:
+                upstream = urlopen(request, timeout=config.request_timeout_seconds)
+            except HTTPError as exc:
+                raw_body = exc.read()
+                self._write_bytes(
+                    raw_body,
+                    exc.headers.get("Content-Type", "application/json; charset=utf-8"),
+                    status=exc.code,
+                    extra_headers={"Cache-Control": "no-store"},
+                )
+                return
+            except URLError as exc:
+                self._write_json(
+                    {
+                        "ok": False,
+                        "message": f"ShellRPG-server unter {config.backend_base_url} nicht erreichbar.",
+                        "detail": str(exc.reason),
+                    },
+                    status=502,
+                )
+                return
+
+            with upstream:
+                content_type = upstream.headers.get("Content-Type", "text/event-stream; charset=utf-8")
+                if "text/event-stream" not in content_type:
+                    raw_body = upstream.read()
+                    self._write_bytes(raw_body, content_type, status=upstream.status, extra_headers={"Cache-Control": "no-store"})
+                    return
+                self.send_response(upstream.status)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Connection", "keep-alive")
+                self.send_header("X-Accel-Buffering", "no")
+                self.end_headers()
+                try:
+                    while True:
+                        chunk = upstream.read(1024)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    return
 
         def _handle_health(self) -> None:
             self._write_json(

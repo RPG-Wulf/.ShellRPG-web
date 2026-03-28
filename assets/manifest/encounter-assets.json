@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "artifact": "shellrpg-www-encounter-assets",
+  "naming_pattern": "[biome]_[timeofday]_[weather]_[view]_[variant].png",
+  "status": "specification-first",
+  "view": "birdseye",
+  "required_matrix": {
+    "encounter_families": [
+      "ghoul",
+      "wolfpack",
+      "revenant",
+      "mire_beast",
+      "ash_raider",
+      "grave_knight",
+      "carrion_flock",
+      "marsh_hexer"
+    ],
+    "timeofday": ["dawn", "day", "dusk", "night"],
+    "weather": ["clear", "rain", "storm", "fog", "snow", "overcast"]
+  },
+  "variant_policy": {
+    "minimum_variants_per_family": 4,
+    "preferred_resolution": "2048x2048 or higher",
+    "style": "photorealistic_dark_fantasy_birdseye"
+  },
+  "target_directories": {
+    "birdseye": "assets/encounters/birdseye/"
+  },
+  "example_slots": [
+    {
+      "asset_id": "encounter_ghoul_night_storm_birdseye_v01",
+      "family": "ghoul",
+      "timeofday": "night",
+      "weather": "storm",
+      "view": "birdseye",
+      "variant": "v01",
+      "status": "planned"
+    },
+    {
+      "asset_id": "encounter_wolfpack_day_snow_birdseye_v02",
+      "family": "wolfpack",
+      "timeofday": "day",
+      "weather": "snow",
+      "view": "birdseye",
+      "variant": "v02",
+      "status": "planned"
+    },
+    {
+      "asset_id": "encounter_mire_beast_dusk_fog_birdseye_v01",
+      "family": "mire_beast",
+      "timeofday": "dusk",
+      "weather": "fog",
+      "view": "birdseye",
+      "variant": "v01",
+      "status": "planned"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "artifact": "shellrpg-www-environment-assets",
+  "naming_pattern": "[biome]_[timeofday]_[weather]_[view]_[variant].png",
+  "status": "specification-first",
+  "required_matrix": {
+    "biomes": [
+      "grassland",
+      "forest",
+      "swamp",
+      "ruins",
+      "graveyard",
+      "rocky_wasteland",
+      "village_outskirts"
+    ],
+    "timeofday": ["dawn", "day", "dusk", "night"],
+    "weather": ["clear", "rain", "storm", "fog", "snow", "overcast"],
+    "view": ["topdown", "birdseye"]
+  },
+  "variant_policy": {
+    "minimum_variants_per_combo": 2,
+    "preferred_resolution": "2048x2048 or higher",
+    "style": "photorealistic_dark_fantasy"
+  },
+  "target_directories": {
+    "topdown": "assets/environment/topdown/",
+    "birdseye": "assets/environment/birdseye/"
+  },
+  "example_slots": [
+    {
+      "asset_id": "grassland_day_clear_topdown_v01",
+      "biome": "grassland",
+      "timeofday": "day",
+      "weather": "clear",
+      "view": "topdown",
+      "variant": "v01",
+      "status": "planned"
+    },
+    {
+      "asset_id": "graveyard_night_fog_birdseye_v01",
+      "biome": "graveyard",
+      "timeofday": "night",
+      "weather": "fog",
+      "view": "birdseye",
+      "variant": "v01",
+      "status": "planned"
+    },
+    {
+      "asset_id": "swamp_dusk_rain_topdown_v02",
+      "biome": "swamp",
+      "timeofday": "dusk",
+      "weather": "rain",
+      "view": "topdown",
+      "variant": "v02",
+      "status": "planned"
+    }
+  ]
+}
+

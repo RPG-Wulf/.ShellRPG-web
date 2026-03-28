@@ -1,58 +1,100 @@
-
 <!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>ShellRPG-www Phase H · v0.7.6</title>
+    <title>ShellRPG-www · v0.7.6</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="ShellRPG-www liefert ein dunkles, serverautoritaeres Dark-Fantasy-Interface fuer denselben Zustand wie der Terminal-Client."
+    />
     <link rel="stylesheet" href="/src/styles/base.css" />
   </head>
   <body>
-    <div id="app">
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">ShellRPG-www · Phase H · v0.7.6</p>
-          <h1>NPC-Handel, Quests, Preise & Artefaktbedingungen</h1>
-          <p class="lede">Grafischer Public Client gegen denselben autoritativen Slice wie der Terminal-Client — jetzt mit echten Händlerdialogen, Questgeber-Struktur, dienstabhängigen Kosten und bedingtem Artefaktgewebe.</p>
+    <div id="particle-layer" class="particle-layer" aria-hidden="true"></div>
+    <div class="page-vignette" aria-hidden="true"></div>
+
+    <div id="app" class="shell-app">
+      <header class="topbar-shell panel-frame">
+        <div class="brand-block">
+          <p class="topbar-shell__eyebrow">ShellRPG-www · Public Gateway · Phase H · v0.7.6</p>
+          <h1 class="topbar-shell__title">The Gloam Atlas</h1>
+          <p class="topbar-shell__lede">
+            Ein düsteres, lebendes Karten-HUD auf demselben autoritativen Charakterzustand wie der Terminal-Client.
+          </p>
         </div>
-        <section class="hero-controls">
-          <label for="command-input">Befehl</label>
-          <div class="controls-row">
-            <input id="command-input" type="text" value="look" />
-            <button id="run-command" type="button">Senden</button>
-            <button id="refresh-all" type="button">Neu laden</button>
-            <button id="recover-live" type="button">Live-Recover</button>
-            <button id="save-request" type="button">Safe Save</button>
-          </div>
-          <div class="controls-row">
-            <button class="quick-action" data-command="walk north">Norden</button>
-            <button class="quick-action" data-command="walk west">Westen</button>
-            <button class="quick-action" data-command="walk east">Osten</button>
-            <button class="quick-action" data-command="walk south">Süden</button>
-            <button class="quick-action" data-command="explore">Explore</button>
-            <button class="quick-action" data-command="hunt north">Hunt</button>
-            <button class="quick-action" data-command="gather iron">Gather Iron</button>
-            <button class="quick-action" data-command="auto battle on balanced">Auto-Battle</button>
-          </div>
-          <div class="controls-row">
-            <button id="lang-de" type="button">DE</button>
-            <button id="lang-en" type="button">EN</button>
-          </div>
-          <p class="small">Gateway: <code>/api</code> via <code>ShellRPG-www</code> zum privaten <code>ShellRPG-server</code></p>
-        </section>
+        <div class="topbar-shell__meta">
+          <span id="meta-live" class="meta-pill">Live: verbinde ...</span>
+          <span id="meta-role" class="meta-pill">Rolle: wird geladen</span>
+          <span id="meta-location" class="meta-pill">Ort: unbekannt</span>
+          <span id="meta-weather" class="meta-pill">Wetter: —</span>
+          <span id="meta-account" class="meta-pill">Account: —</span>
+        </div>
       </header>
 
-      <main class="dashboard">
-        <section id="status-panel" class="panel panel-wide"></section>
-        <section id="roster-panel" class="panel panel-wide">
-          <div class="roster-layout">
-            <div class="stack">
-              <h2>Charakterverwaltung</h2>
+      <section class="command-dock panel-frame">
+        <div class="command-dock__header">
+          <div>
+            <p class="section-eyebrow">Command Dock</p>
+            <h2>Steuern, lesen, umschalten</h2>
+          </div>
+          <p class="small">
+            Gateway: <code>/api</code> via <code>ShellRPG-www</code> zum privaten <code>ShellRPG-server</code>
+          </p>
+        </div>
+
+        <div class="command-composer">
+          <label class="field field--wide" for="command-input">
+            <span>Befehl</span>
+            <input id="command-input" type="text" value="look" autocomplete="off" />
+          </label>
+          <button id="run-command" type="button">Senden</button>
+          <button id="refresh-all" type="button">Neu laden</button>
+          <button id="recover-live" type="button">Live-Recover</button>
+          <button id="save-request" type="button">Safe Save</button>
+        </div>
+
+        <div class="quick-action-bar">
+          <button class="quick-action" data-command="walk north" type="button">Norden</button>
+          <button class="quick-action" data-command="walk west" type="button">Westen</button>
+          <button class="quick-action" data-command="walk east" type="button">Osten</button>
+          <button class="quick-action" data-command="walk south" type="button">Süden</button>
+          <button class="quick-action" data-command="explore" type="button">Erkunden</button>
+          <button class="quick-action" data-command="hunt north" type="button">Jagen</button>
+          <button class="quick-action" data-command="gather iron" type="button">Eisen sammeln</button>
+          <button class="quick-action" data-command="auto battle on balanced" type="button">Auto-Battle</button>
+          <button id="lang-de" type="button">DE</button>
+          <button id="lang-en" type="button">EN</button>
+        </div>
+      </section>
+
+      <main class="shell-layout">
+        <aside class="shell-rail shell-rail--left">
+          <section id="status-panel" class="panel-frame panel-frame--dense"></section>
+
+          <section id="roster-panel" class="panel-frame panel-frame--dense">
+            <div class="panel-head">
+              <div>
+                <p class="section-eyebrow">Roster</p>
+                <h2>Charakterverwaltung</h2>
+              </div>
               <p id="roster-account" class="small">Account wird geladen ...</p>
-              <p id="roster-feedback" class="small">Client und Web bedienen denselben aktiven serverseitigen Charakterzustand.</p>
-              <div id="roster-list" class="roster-list"></div>
             </div>
+
+            <p id="roster-feedback" class="small">
+              Client und Web bedienen denselben aktiven serverseitigen Charakterzustand.
+            </p>
+
+            <div id="roster-list" class="roster-list"></div>
+
             <form id="character-create-form" class="character-form">
+              <div class="panel-head panel-head--compact">
+                <div>
+                  <p class="section-eyebrow">Creation</p>
+                  <h3>Neuen Charakter binden</h3>
+                </div>
+              </div>
+
               <div class="form-grid">
                 <label class="field">
                   <span>Name</span>
@@ -95,32 +137,45 @@
                   <input id="attr-speed" type="number" min="1" max="40" value="10" />
                 </label>
               </div>
+
               <p id="attribute-budget" class="small">Verbleibende Bonuspunkte: 12</p>
-              <div class="controls-row">
+
+              <div class="quick-action-bar quick-action-bar--tight">
                 <button id="character-create" type="submit">Charakter erstellen</button>
                 <button id="roster-refresh" type="button">Charaktere laden</button>
               </div>
             </form>
-          </div>
+          </section>
+
+          <section id="weather-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="recovery-panel" class="panel-frame panel-frame--dense"></section>
+        </aside>
+
+        <section class="shell-stage">
+          <section id="scene-panel" class="panel-frame stage-scene"></section>
+          <section id="map-panel" class="panel-frame stage-map"></section>
         </section>
-        <section id="scene-panel" class="panel panel-hero"></section>
-        <section id="map-panel" class="panel panel-wide"></section>
-        <section id="character-panel" class="panel"></section>
-        <section id="inventory-panel" class="panel"></section>
-        <section id="market-panel" class="panel"></section>
-        <section id="combat-panel" class="panel"></section>
-        <section id="city-panel" class="panel"></section>
-        <section id="weather-panel" class="panel"></section>
-        <section id="recovery-panel" class="panel"></section>
-        <section id="npc-panel" class="panel"></section>
-        <section id="brew-panel" class="panel"></section>
-        <section id="enchant-panel" class="panel"></section>
-        <section id="weave-panel" class="panel"></section>
-        <section id="journal-panel" class="panel"></section>
-        <section id="command-panel" class="panel"></section>
-        <section id="asset-panel" class="panel panel-wide"></section>
+
+        <aside class="shell-rail shell-rail--right">
+          <section id="character-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="inventory-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="market-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="combat-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="journal-panel" class="panel-frame panel-frame--dense"></section>
+          <section id="command-panel" class="panel-frame panel-frame--dense"></section>
+        </aside>
       </main>
+
+      <section class="lower-deck">
+        <section id="city-panel" class="panel-frame panel-frame--dense"></section>
+        <section id="npc-panel" class="panel-frame panel-frame--dense"></section>
+        <section id="brew-panel" class="panel-frame panel-frame--dense"></section>
+        <section id="enchant-panel" class="panel-frame panel-frame--dense"></section>
+        <section id="weave-panel" class="panel-frame panel-frame--dense"></section>
+        <section id="asset-panel" class="panel-frame panel-frame--dense"></section>
+      </section>
     </div>
+
     <script type="module" src="/src/app.js"></script>
   </body>
 </html>

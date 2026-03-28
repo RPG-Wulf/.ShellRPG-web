@@ -1,0 +1,2 @@
+[console_scripts]
+shellrpg-www = shellrpg_www.app:main

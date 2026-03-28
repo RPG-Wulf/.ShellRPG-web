@@ -5,7 +5,10 @@ const STORAGE_KEYS = {
   characterName: "shellrpg_character_name",
 };
 let currentLang = "de";
-let pollingHandle = null;
+let liveEventSource = null;
+let liveReconnectHandle = null;
+let liveEventCursor = 0;
+let liveAuxiliaryRefreshHandle = null;
 let weatherMap = null;
 let recoveryConflicts = null;
 let recoveryHistory = null;
@@ -17,6 +20,8 @@ let enchantingCatalog = null;
 let artifactWeave = null;
 let characterRoster = null;
 let sessionReady = false;
+let liveConnectionState = "offline";
+let uiModules = null;
 const CHARACTER_FACTIONS = ["Menschen", "Amazonen", "Waldelfen", "Dryaden", "Baumwesen", "Nekari", "Ssarathi", "Salzlungen", "Orks", "Dämonen"];
 const CHARACTER_RACES = ["Mensch", "Nekari", "Ssarathi", "Salzlunge", "Waldelf", "Dryade", "Baumwesen"];
 const CHARACTER_CLASSES = ["Ritter", "Totenbeschwörer", "Kleriker", "Waldläufer", "Magier", "Dieb", "Beastmaster"];
@@ -28,6 +33,77 @@ const ATTRIBUTE_FIELDS = [
   { key: "wisdom", id: "attr-wisdom" },
   { key: "speed", id: "attr-speed" },
 ];
+const OBSERVER_SAFE_COMMAND_PATTERNS = [
+  "showcommands",
+  "show commands",
+  "commands",
+  "help",
+  "look",
+  "inspect",
+  "map",
+  "inventory",
+  "equipment",
+  "buffs",
+  "quests",
+  "quest log",
+  "quests log",
+  "journal",
+  "lang",
+  "lang de",
+  "lang en",
+  "market",
+  "merchant",
+  "merchant list",
+  "brew menu",
+  "enchant menu",
+  "artifact",
+  "artifact weave",
+  "artifact weave cities",
+  "artifact weave buildings",
+  "artifact weave detailed",
+  "artifact weave conditions",
+  "rcon",
+  "rcon status",
+  "rcon ticks",
+  "rcon savepoint",
+  "rcon npcs",
+  "rcon weather",
+  "rcon recovery",
+  "rcon artifact",
+  "rcon npc opinion",
+  "rcon npc schedule",
+  "rcon rumor list",
+  "rcon quest inspect",
+  "npc",
+  "npc menu",
+  "city",
+  "city status",
+  "militia",
+  "militia status",
+  "garrison",
+  "garrison status",
+];
+let latestSnapshot = null;
+
+// Laedt die gekapselten WWW-UI-Module nur einmal nach, damit die Hauptdatei Steuerlogik bleibt und die Praesentation modularisiert wird.
+async function loadUiModules() {
+  if (uiModules) return uiModules;
+  const [statusPanel, mapView, particleLayer] = await Promise.all([
+    import("/src/features/status/statusPanel.js"),
+    import("/src/features/map/mapView.js"),
+    import("/src/features/atmosphere/particleLayer.js"),
+  ]);
+  uiModules = { statusPanel, mapView, particleLayer };
+  return uiModules;
+}
+
+// Normalisiert serverseitige Asset-Pfade auf same-origin WWW-Pfade.
+function normalizeAssetPath(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/")) return raw;
+  return `/${raw.replace(/^\.?\//, "")}`;
+}
 
 function randomId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -46,6 +122,20 @@ function writeIdentity(identity) {
   if (identity.playerAccountId) window.localStorage.setItem(STORAGE_KEYS.accountId, identity.playerAccountId);
   if (identity.deviceId) window.localStorage.setItem(STORAGE_KEYS.deviceId, identity.deviceId);
   if (identity.characterName) window.localStorage.setItem(STORAGE_KEYS.characterName, identity.characterName);
+}
+
+// Merkt sich den letzten serverseitigen Live-Cursor, damit SSE-Ereignisse und direkte API-Antworten sauber dedupliziert werden.
+function rememberLiveCursor(snapshot) {
+  const cursor = Number(snapshot?.status?.live_event_id || 0);
+  if (cursor > liveEventCursor) liveEventCursor = cursor;
+}
+
+// Haelt den lokalen Verbindungszustand fuer die Statusanzeige zwischen Live-SSE und Fallback-Refresh fest.
+function setLiveConnectionState(nextState) {
+  liveConnectionState = nextState;
+  if (typeof document !== "undefined") {
+    syncTopbarMeta(latestSnapshot?.status || {});
+  }
 }
 
 async function ensureSession() {
@@ -118,18 +208,63 @@ function findCommandDetail(commandDetails, query) {
   return best?.entry || null;
 }
 
+// Prueft, ob die aktuelle Sitzung laut letztem Snapshot schreibend auf denselben Charakterzustand zugreifen darf.
+function controlWriteAllowed(status) {
+  if (!status?.control_mode) return true;
+  return !!status.control_write_allowed;
+}
+
+// Prueft lokal, ob ein Spielkommando fuer Beobachter rein lesend und damit weiterhin erlaubt bleibt.
+function isObserverSafeCommand(command, commandDetails = []) {
+  const normalized = normalizeCommandText(command);
+  if (!normalized) return true;
+  if (normalized === "help" || normalized.startsWith("help ")) return true;
+  const detail = findCommandDetail(commandDetails, command);
+  if (detail?.observer_safe) return true;
+  return OBSERVER_SAFE_COMMAND_PATTERNS.some((pattern) => normalized === pattern || normalized.startsWith(`${pattern} `));
+}
+
+// Blockiert lokale Schreibpfade fuer Beobachter schon im WWW, bevor ein Request an den Server geht.
+function guardObserverWrite(status, actionLabel, command = "") {
+  if (controlWriteAllowed(status)) return false;
+  if (command && isObserverSafeCommand(command, latestSnapshot?.command_details || [])) return false;
+  const reason = `Diese Web-Sitzung ist Beobachter. '${actionLabel}' bleibt read-only, bis du die Steuerung explizit uebernimmst.`;
+  setRosterFeedback(reason, "feedback-warn");
+  return true;
+}
+
 function renderGatewayError(message) {
   const statusPanel = document.getElementById("status-panel");
   statusPanel.innerHTML = "";
   statusPanel.append(el("h2", "", "Gateway-Verbindung"));
   statusPanel.append(el("p", "status-message", message));
   setRosterFeedback(message, "feedback-error");
+  syncTopbarMeta(latestSnapshot?.status || {});
+}
+
+// Spiegelt die serverseitige Weltlage in die persistent sichtbare Topbar, damit Ort, Rolle und Live-Zustand immer praesent bleiben.
+function syncTopbarMeta(status) {
+  const live = document.getElementById("meta-live");
+  const role = document.getElementById("meta-role");
+  const location = document.getElementById("meta-location");
+  const weather = document.getElementById("meta-weather");
+  const account = document.getElementById("meta-account");
+  if (live) {
+    const label = liveConnectionState === "live"
+      ? "Live: Server Events"
+      : (liveConnectionState === "connecting" ? "Live: verbinde ..." : "Live: Fallback");
+    live.textContent = label;
+  }
+  if (role) role.textContent = `Rolle: ${controlRoleLabel(status)}`;
+  if (location) location.textContent = `Ort: ${status?.location_label || "unbekannt"} [${status?.coords_label || "—"}]`;
+  if (weather) weather.textContent = `Wetter: ${status?.weather_label || "—"} · ${status?.time_label || "—"}`;
+  if (account) account.textContent = `Account: ${status?.player_account_id || "—"}`;
 }
 
 function cardSprite(src, label) {
   const wrap = el("div", "sprite-card");
   const img = document.createElement("img");
-  img.src = src;
+  img.src = normalizeAssetPath(src);
   img.alt = label;
   wrap.appendChild(img);
   wrap.appendChild(el("div", "sprite-label", label));
@@ -220,7 +355,7 @@ function renderCharacterRoster(roster, status) {
     const controls = el("div", "controls-row");
     const switchButton = el("button", "small-button", entry.active ? "Aktiv" : "Aktivieren");
     switchButton.type = "button";
-    switchButton.disabled = !!entry.active;
+    switchButton.disabled = !!entry.active || !controlWriteAllowed(status);
     switchButton.addEventListener("click", () => switchCharacter(entry.character_id));
     controls.append(switchButton);
     card.append(controls);
@@ -228,77 +363,61 @@ function renderCharacterRoster(roster, status) {
   });
 }
 
+// Uebersetzt die serverseitige Rollenkennung in eine lesbare WWW-Beschriftung.
+function controlRoleLabel(status) {
+  const role = status?.control_role || "";
+  if (role === "active-controller") return "Aktive Steuerung";
+  if (role === "observer") return "Beobachter";
+  return role || "Unbekannt";
+}
+
+// Uebersetzt den technischen Steuerungszustand in eine ruhig lesbare Oberflaechenform.
+function controlStateLabel(status) {
+  const state = status?.control_state || "free";
+  if (state === "held-by-you") return "von dir gehalten";
+  if (state === "held-by-other") return "von anderer Sitzung gehalten";
+  if (state === "free") return "frei";
+  return state;
+}
+
+// Rendert die Statuskarte inklusive expliziter Controller-/Observer-Steuerung fuer denselben Charakterzustand.
 function renderStatus(panel, status, message) {
-  panel.innerHTML = "";
-  const top = el("div", "status-top");
-  top.append(el("h2", "", `${status.character_name} · ${status.class_name}/${status.race_name}`));
-  top.append(el("p", "status-message", message || status.overlay_message));
-  panel.append(top);
-
-  const stats = el("div", "status-grid");
-  [
-    ["Ort", `${status.location_label} [${status.coords_label}]`],
-    ["HP", `${status.hp_current}/${status.hp_max}`],
-    ["MP", `${status.mana_current}/${status.mana_max}`],
-    ["Tick", `${status.tick_value}`],
-    ["Silber/Gold", `${status.silver}s / ${status.gold}g`],
-    ["Hunger", status.hunger],
-    ["Aktion", status.active_action],
-    ["Wetter", status.weather_label || "—"],
-    ["Zeit", status.time_label || "—"],
-    ["Mond", status.moon_label || "—"],
-    ["Venus", status.venus_label || "—"],
-    ["Auto-Battle", `${status.auto_battle_enabled ? "an" : "aus"} (${status.auto_battle_mode})`],
-  ].forEach(([k,v]) => {
-    const box = el("div", "stat-box");
-    box.append(el("span", "stat-k", k));
-    box.append(el("span", "stat-v", v));
-    stats.append(box);
+  if (!uiModules?.statusPanel?.renderStatusPanel) return;
+  uiModules.statusPanel.renderStatusPanel(panel, status, message, {
+    liveConnectionState,
+    onTakeControl: () => takeControl(),
+    onReleaseControl: () => releaseControl(),
   });
-  panel.append(stats);
-
-  if (status.faction_tension) panel.append(el("p", "tension", status.faction_tension));
-  if (status.server_id) panel.append(el("p", "small", `Server: ${status.server_id} · Kalender: ${status.calendar_source || 'local'}`));
-  if (status.player_account_id) panel.append(el("p", "small", `Account: ${status.player_account_id}`));
-  if (status.combat_choices?.length) panel.append(el("p", "choices", `Reaktionsfenster: ${status.combat_choices.join(", ")}`));
 }
 
 function renderScene(panel, status) {
   panel.innerHTML = "";
   const hero = el("div", "scene-frame");
-  hero.style.backgroundImage = `linear-gradient(135deg, rgba(8,8,14,.55), rgba(8,8,14,.1)), url('${status.media_file}')`;
-  hero.append(el("div", "scene-caption", status.overlay_message));
+  hero.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 14, 0.18), rgba(8, 8, 14, 0.78)), url('${normalizeAssetPath(status.media_file)}')`;
+  hero.append(
+    el(
+      "div",
+      "scene-caption",
+      `${status.overlay_message || "Die Szene verharrt."} · ${status.location_label} · ${status.weather_label || "—"} · ${status.time_label || "—"}`,
+    ),
+  );
   panel.append(hero);
 }
 
 function renderMap(panel, mapTiles) {
-  panel.innerHTML = "";
-  panel.append(el("h2", "", "Weltkarte"));
-  const grid = el("div", "map-grid");
-  mapTiles.forEach((tile) => {
-    const node = el("button", `map-tile state-${tile.visibility_state}`);
-    node.type = "button";
-    if (tile.visibility_state !== "unknown") {
-      node.style.backgroundImage = `linear-gradient(135deg, rgba(10,10,14,.15), rgba(10,10,14,.55)), url('${tile.sprite}')`;
-      node.append(el("span", "map-label", tile.label));
-      node.append(el("span", "map-meta", `${tile.biome} · ${tile.terrain}`));
-      if (tile.building) node.append(el("span", "map-building", tile.building));
-      node.addEventListener("click", () => {
-        document.getElementById("command-input").value = `walk ${tile.coords_label}`;
-      });
-    } else {
-      node.append(el("span", "map-label", "Unkartiert"));
-    }
-    if (tile.is_current) node.classList.add("is-current");
-    grid.append(node);
+  if (!uiModules?.mapView?.renderMapPanel) return;
+  uiModules.mapView.renderMapPanel(panel, {
+    status: latestSnapshot?.status,
+    mapTiles,
+    weatherMap,
+    combat: latestSnapshot?.combat || [],
+    onTileCommand: (command) => {
+      const input = document.getElementById("command-input");
+      if (!input) return;
+      input.value = command;
+      updateCommandComposerState();
+    },
   });
-  panel.append(grid);
-  if (weatherMap?.fronts?.length) {
-    const fronts = el('div', 'stack');
-    fronts.append(el('h3', '', 'Wetterfronten'));
-    weatherMap.fronts.forEach((front) => fronts.append(el('p', 'small', `${front.label} · ${front.name} · Zentrum ${front.x},${front.y} · Radius ${front.radius}`)));
-    panel.append(fronts);
-  }
 }
 
 
@@ -583,7 +702,7 @@ function renderJournal(panel, journal) {
   panel.append(wrap);
 }
 
-function renderCommands(panel, commands, commandDetails = []) {
+function renderCommands(panel, commands, commandDetails = [], status = null) {
   panel.innerHTML = "";
   panel.append(el("h2", "", "Befehle"));
   panel.append(el("p", "small", "Hover zeigt die Langhilfe, Klick uebernimmt das Kommandobeispiel in die Eingabe."));
@@ -600,6 +719,7 @@ function renderCommands(panel, commands, commandDetails = []) {
     const card = el("button", "command-help-card");
     card.type = "button";
     card.title = [entry.usage, entry.summary, entry.details].filter(Boolean).join("\n\n");
+    card.disabled = !controlWriteAllowed(status) && !entry.observer_safe;
     card.addEventListener("click", () => {
       document.getElementById("command-input").value = entry.usage;
     });
@@ -610,11 +730,12 @@ function renderCommands(panel, commands, commandDetails = []) {
   panel.append(list);
 }
 
-function applyCommandTooltips(commandDetails = []) {
+function applyCommandTooltips(commandDetails = [], status = null) {
   document.querySelectorAll(".quick-action").forEach((button) => {
     const detail = findCommandDetail(commandDetails, button.dataset.command || "");
     if (!detail) return;
     button.title = [detail.usage, detail.summary, detail.details].filter(Boolean).join("\n\n");
+    button.disabled = !controlWriteAllowed(status) && !isObserverSafeCommand(button.dataset.command || "", commandDetails);
   });
 }
 
@@ -696,7 +817,38 @@ function renderAssets(panel, status, inventory, combat, city, mapTiles) {
   panel.append(grid);
 }
 
+// Sperrt lokale Schreib-Widgets im WWW, sobald die Sitzung nur noch Beobachter ist.
+function applyControlLocks(status, commandDetails = []) {
+  const canWrite = controlWriteAllowed(status);
+  const createButton = document.getElementById("character-create");
+  const rosterRefresh = document.getElementById("roster-refresh");
+  const recoverButton = document.getElementById("recover-live");
+  const saveButton = document.getElementById("save-request");
+  if (createButton) createButton.disabled = !canWrite;
+  if (recoverButton) recoverButton.disabled = !canWrite;
+  if (saveButton) saveButton.disabled = !canWrite;
+  if (rosterRefresh) rosterRefresh.disabled = false;
+  document.querySelectorAll("#character-create-form input, #character-create-form select").forEach((node) => {
+    node.disabled = !canWrite;
+  });
+  applyCommandTooltips(commandDetails, status);
+  updateCommandComposerState();
+}
+
+// Schaltet den WWW-Senden-Button dynamisch ab, wenn ein Beobachter gerade ein Schreibkommando tippt.
+function updateCommandComposerState() {
+  const input = document.getElementById("command-input");
+  const runButton = document.getElementById("run-command");
+  if (!input || !runButton) return;
+  const blocked = !controlWriteAllowed(latestSnapshot?.status) && !isObserverSafeCommand(input.value || "", latestSnapshot?.command_details || []);
+  runButton.disabled = blocked;
+  runButton.title = blocked ? "Beobachter duerfen diesen Befehl erst nach explizitem Takeover senden." : "";
+}
+
 function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, recoveryHistory = null, weatherRegions = null) {
+  latestSnapshot = snapshot;
+  rememberLiveCursor(snapshot);
+  syncTopbarMeta(snapshot.status);
   renderStatus(document.getElementById("status-panel"), snapshot.status, snapshot.message);
   renderScene(document.getElementById("scene-panel"), snapshot.status);
   renderMap(document.getElementById("map-panel"), snapshot.map_tiles);
@@ -706,7 +858,7 @@ function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, r
   renderCombat(document.getElementById("combat-panel"), snapshot.combat, snapshot.status);
   renderCity(document.getElementById("city-panel"), snapshot.city);
   renderJournal(document.getElementById("journal-panel"), snapshot.journal);
-  renderCommands(document.getElementById("command-panel"), snapshot.commands, snapshot.command_details || []);
+  renderCommands(document.getElementById("command-panel"), snapshot.commands, snapshot.command_details || [], snapshot.status);
   renderAssets(document.getElementById("asset-panel"), snapshot.status, snapshot.inventory, snapshot.combat, snapshot.city, snapshot.map_tiles);
   renderWeatherMap(document.getElementById('weather-panel'), weatherMap, weatherRegions);
   renderRecovery(document.getElementById('recovery-panel'), recoveryConflicts, recoveryHistory);
@@ -715,12 +867,76 @@ function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, r
   renderEnchanting(document.getElementById('enchant-panel'), enchantingCatalog);
   renderArtifactWeave(document.getElementById('weave-panel'), artifactWeave);
   renderCharacterRoster(characterRoster, snapshot.status);
-  applyCommandTooltips(snapshot.command_details || []);
+  applyControlLocks(snapshot.status, snapshot.command_details || []);
+  if (uiModules?.particleLayer?.syncParticleLayer) {
+    void uiModules.particleLayer.syncParticleLayer("particle-layer", snapshot.status, weatherMap);
+  }
+}
+
+// Haelt die lokalen Session-Identitaetsdaten synchron zum zuletzt gerenderten serverseitigen Snapshot.
+function persistSnapshotIdentity(snapshot) {
+  writeIdentity({
+    playerAccountId: snapshot?.status?.player_account_id || readIdentity().playerAccountId,
+    deviceId: readIdentity().deviceId,
+    characterName: snapshot?.status?.character_name || readIdentity().characterName,
+  });
+}
+
+// Laedt die querliegenden WWW-Panels nur bei Bedarf nach, waehrend der Kernzustand bereits per Live-Snapshot kommt.
+async function refreshAuxiliaryState() {
+  const [freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
+    fetchJson('/api/weather/map?radius=6'),
+    fetchJson('/api/recovery/conflicts'),
+    fetchJson('/api/recovery/history'),
+    fetchJson('/api/weather/regions'),
+    fetchJson('/api/npcs'),
+    fetchJson('/api/brewing/catalog'),
+    fetchJson('/api/enchanting/catalog'),
+    fetchJson('/api/artifact/weave'),
+    fetchJson('/api/characters')
+  ]);
+  weatherMap = freshWeatherMap;
+  recoveryConflicts = freshRecovery;
+  recoveryHistory = freshHistory;
+  weatherRegions = freshRegions;
+  npcs = freshNpcs;
+  brewingCatalog = freshBrewing;
+  enchantingCatalog = freshEnchanting;
+  artifactWeave = freshWeave;
+  characterRoster = freshRoster;
+  if (!npcMenu && freshNpcs?.entries?.length) {
+    try { npcMenu = await fetchJson(`/api/npcs/menu?name=${encodeURIComponent(freshNpcs.entries[0].name)}`); } catch (_) {}
+  }
+}
+
+// Rendert einen vollen Snapshot inklusive Identitaetssync und optionalem UI-Feedback in einer Stelle.
+function applySnapshot(snapshot, messageOverride = null, feedbackTone = "") {
+  persistSnapshotIdentity(snapshot);
+  if (messageOverride) snapshot.message = messageOverride;
+  renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
+  if (messageOverride && feedbackTone) setRosterFeedback(messageOverride, feedbackTone);
+}
+
+// Plant einen entkoppelten Nachzug der Zusatzpanels ein, damit Live-Snapshots sofort sichtbar werden und Restdaten ruhig folgen.
+function scheduleAuxiliaryRefresh() {
+  if (liveAuxiliaryRefreshHandle) window.clearTimeout(liveAuxiliaryRefreshHandle);
+  liveAuxiliaryRefreshHandle = window.setTimeout(async () => {
+    liveAuxiliaryRefreshHandle = null;
+    try {
+      await ensureSession();
+      await refreshAuxiliaryState();
+      if (latestSnapshot) renderSnapshot(latestSnapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
+    } catch (error) {
+      setLiveConnectionState("fallback");
+      renderGatewayError(`Zusatzansichten konnten nicht aktualisiert werden: ${error.message}`);
+    }
+  }, 120);
 }
 
 async function switchCharacter(characterId) {
   try {
     await ensureSession();
+    if (guardObserverWrite(latestSnapshot?.status, "Charakterwechsel")) return;
     const result = await fetchJson('/api/character/select', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -736,6 +952,7 @@ async function createCharacterFromForm(event) {
   event.preventDefault();
   const remaining = syncAttributeBudget();
   const payload = characterPayloadFromForm();
+  if (guardObserverWrite(latestSnapshot?.status, "Charaktererstellung")) return;
   if (!payload.character_name) {
     setRosterFeedback('Bitte zuerst einen Charakternamen eingeben.', 'feedback-error');
     return;
@@ -761,123 +978,201 @@ async function createCharacterFromForm(event) {
   }
 }
 
+// Uebernimmt die aktive Steuerung explizit fuer die aktuelle Web-Sitzung.
+async function takeControl() {
+  try {
+    await ensureSession();
+    const result = await fetchJson('/api/control/takeover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'www-manual-takeover' }),
+    });
+    await loadState(result.message || 'Steuerung uebernommen.');
+  } catch (error) {
+    setRosterFeedback(`Steuerungsuebernahme fehlgeschlagen: ${error.message}`, 'feedback-error');
+  }
+}
+
+// Gibt die aktive Steuerung wieder frei, damit eine andere Sitzung kontrolliert uebernehmen kann.
+async function releaseControl() {
+  try {
+    await ensureSession();
+    const result = await fetchJson('/api/control/release', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    await loadState(result.message || 'Steuerung freigegeben.');
+  } catch (error) {
+    setRosterFeedback(`Steuerungsfreigabe fehlgeschlagen: ${error.message}`, 'feedback-error');
+  }
+}
+
 async function loadState(messageOverride = null) {
   try {
     await ensureSession();
-    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
-      fetchJson('/api/state'),
-      fetchJson('/api/weather/map?radius=3'),
-      fetchJson('/api/recovery/conflicts'),
-      fetchJson('/api/recovery/history'),
-      fetchJson('/api/weather/regions'),
-      fetchJson('/api/npcs'),
-      fetchJson('/api/brewing/catalog'),
-      fetchJson('/api/enchanting/catalog'),
-      fetchJson('/api/artifact/weave'),
-      fetchJson('/api/characters')
-    ]);
-    weatherMap = freshWeatherMap;
-    recoveryConflicts = freshRecovery;
-    recoveryHistory = freshHistory;
-    weatherRegions = freshRegions;
-    npcs = freshNpcs;
-    brewingCatalog = freshBrewing;
-    enchantingCatalog = freshEnchanting;
-    artifactWeave = freshWeave;
-    characterRoster = freshRoster;
-    if (!npcMenu && freshNpcs?.entries?.length) {
-      try { npcMenu = await fetchJson(`/api/npcs/menu?name=${encodeURIComponent(freshNpcs.entries[0].name)}`); } catch (_) {}
-    }
-    writeIdentity({
-      playerAccountId: snapshot.status.player_account_id,
-      deviceId: readIdentity().deviceId,
-      characterName: snapshot.status.character_name,
-    });
-    if (messageOverride) snapshot.message = messageOverride;
-    renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
-    if (messageOverride) setRosterFeedback(messageOverride, 'feedback-success');
+    const snapshot = await fetchJson('/api/state');
+    await refreshAuxiliaryState();
+    applySnapshot(snapshot, messageOverride, messageOverride ? 'feedback-success' : '');
   } catch (error) {
     sessionReady = false;
+    setLiveConnectionState("offline");
     renderGatewayError(`ShellRPG-server aktuell nicht erreichbar: ${error.message}`);
   }
 }
 
+// Sendet ein Kommando ueber den WWW-Gateway und spiegelt Konflikte des Rollenmodells sichtbar in die UI zurueck.
 async function sendCommand(command) {
   try {
     await ensureSession();
+    if (guardObserverWrite(latestSnapshot?.status, command, command)) return;
     const payload = JSON.stringify({ command });
-    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
-      fetchJson('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload }),
-      fetchJson('/api/weather/map?radius=3'),
-      fetchJson('/api/recovery/conflicts'),
-      fetchJson('/api/recovery/history'),
-      fetchJson('/api/weather/regions'),
-      fetchJson('/api/npcs'),
-      fetchJson('/api/brewing/catalog'),
-      fetchJson('/api/enchanting/catalog'),
-      fetchJson('/api/artifact/weave'),
-      fetchJson('/api/characters')
-    ]);
-    weatherMap = freshWeatherMap;
-    recoveryConflicts = freshRecovery;
-    recoveryHistory = freshHistory;
-    weatherRegions = freshRegions;
-    npcs = freshNpcs;
-    brewingCatalog = freshBrewing;
-    enchantingCatalog = freshEnchanting;
-    artifactWeave = freshWeave;
-    characterRoster = freshRoster;
-    if (freshNpcs?.entries?.length) {
-      try { npcMenu = await fetchJson(`/api/npcs/menu?name=${encodeURIComponent(freshNpcs.entries[0].name)}`); } catch (_) {}
+    const snapshot = await fetchJson('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+    applySnapshot(snapshot);
+    scheduleAuxiliaryRefresh();
+    if (snapshot.control_conflict) {
+      setRosterFeedback(snapshot.message || 'Steuerungskonflikt erkannt.', 'feedback-warn');
+    } else {
+      setRosterFeedback(snapshot.message || 'Kommando an den autoritativen Server zugestellt.', 'feedback-success');
     }
-    writeIdentity({
-      playerAccountId: snapshot.status.player_account_id,
-      deviceId: readIdentity().deviceId,
-      characterName: snapshot.status.character_name,
-    });
-    renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
   } catch (error) {
     sessionReady = false;
+    setLiveConnectionState("offline");
     renderGatewayError(`Kommando konnte nicht an den privaten Server zugestellt werden: ${error.message}`);
   }
 }
 
-function startPolling() {
-  if (pollingHandle) window.clearInterval(pollingHandle);
-  pollingHandle = window.setInterval(() => loadState(), 1000);
+// Beendet eine bestehende EventSource sauber, damit Sprachwechsel oder Reconnects keine Doppelstreams erzeugen.
+function stopLiveUpdates() {
+  if (liveReconnectHandle) {
+    window.clearTimeout(liveReconnectHandle);
+    liveReconnectHandle = null;
+  }
+  if (liveEventSource) {
+    liveEventSource.close();
+    liveEventSource = null;
+  }
 }
 
-initializeCharacterForm();
+// Plant einen ruhigen Reconnect ein und laesst bis dahin den manuellen Fallback-Refresh aktiv.
+function scheduleLiveReconnect() {
+  if (liveReconnectHandle) return;
+  setLiveConnectionState("fallback");
+  liveReconnectHandle = window.setTimeout(async () => {
+    liveReconnectHandle = null;
+    try {
+      await loadState();
+    } catch (_) {}
+    await startLiveUpdates();
+  }, 2000);
+}
 
-const commandInput = document.getElementById("command-input");
-const characterForm = document.getElementById("character-create-form");
-const rosterRefresh = document.getElementById("roster-refresh");
-document.getElementById("run-command").addEventListener("click", () => sendCommand(commandInput.value));
-document.getElementById("refresh-all").addEventListener("click", () => loadState("Ansichten aktualisiert."));
-if (characterForm) characterForm.addEventListener("submit", createCharacterFromForm);
-if (rosterRefresh) rosterRefresh.addEventListener("click", () => loadState("Charakterliste aktualisiert."));
-const recoverButton = document.getElementById("recover-live");
-if (recoverButton) recoverButton.addEventListener("click", async () => {
-  await fetchJson('/api/recover/live', {method:'POST', headers:{'Content-Type': 'application/json'}, body:'{}'});
-  await loadState('Live-Recover ausgeführt.');
-});
-document.getElementById("lang-de").addEventListener("click", async () => { currentLang = "de"; await sendCommand("lang de"); });
-document.getElementById("lang-en").addEventListener("click", async () => { currentLang = "en"; await sendCommand("lang en"); });
-commandInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    sendCommand(commandInput.value);
+// Verarbeitet serverseitige Live-Snapshots dedupliziert und zieht Zusatzpanels asynchron nach.
+function consumeLiveEvent(eventPayload) {
+  const eventId = Number(eventPayload?.event_id || 0);
+  if (eventId <= liveEventCursor) return;
+  if (!eventPayload?.snapshot) return;
+  setLiveConnectionState("live");
+  applySnapshot(eventPayload.snapshot);
+  scheduleAuxiliaryRefresh();
+}
+
+// Baut die gleiche Charaktersicht ueber einen same-origin SSE-Kanal auf und faellt bei Fehlern kontrolliert zurueck.
+async function startLiveUpdates() {
+  try {
+    if (!window.EventSource) {
+      setLiveConnectionState("fallback");
+      return;
+    }
+    await ensureSession();
+    if (liveEventSource) return;
+    setLiveConnectionState("connecting");
+    const source = new EventSource(`/api/events?lang=${encodeURIComponent(currentLang)}&after=${liveEventCursor}`);
+    liveEventSource = source;
+    source.addEventListener("snapshot", (event) => {
+      try {
+        consumeLiveEvent(JSON.parse(event.data));
+      } catch (_) {}
+    });
+    source.onmessage = (event) => {
+      try {
+        consumeLiveEvent(JSON.parse(event.data));
+      } catch (_) {}
+    };
+    source.onerror = () => {
+      if (liveEventSource !== source) return;
+      source.close();
+      liveEventSource = null;
+      scheduleLiveReconnect();
+    };
+  } catch (_) {
+    scheduleLiveReconnect();
   }
-});
-document.querySelectorAll(".quick-action").forEach((button) => {
-  button.addEventListener("click", () => sendCommand(button.dataset.command));
-});
+}
 
-loadState("Phase v0.7.6 geladen: konsolidierter öffentlicher Slice mit Händler-, Quest- und Artefaktansichten aktiv.");
-startPolling();
+// Initialisiert die WWW-Oberflaeche erst nach Modul-Load, damit Layout, Partikel und Live-Daten geordnet starten.
+async function bootstrap() {
+  await loadUiModules();
+  if (uiModules?.particleLayer?.initializeParticleLayer) {
+    await uiModules.particleLayer.initializeParticleLayer("particle-layer");
+  }
 
-const saveButton = document.getElementById('save-request');
-if (saveButton) saveButton.addEventListener('click', async () => {
-  await fetchJson('/api/save/request', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-  await loadState('Safe-Save beim Server angefragt.');
-});
+  initializeCharacterForm();
+
+  const commandInput = document.getElementById("command-input");
+  const characterForm = document.getElementById("character-create-form");
+  const rosterRefresh = document.getElementById("roster-refresh");
+  const runButton = document.getElementById("run-command");
+  const refreshButton = document.getElementById("refresh-all");
+  const langDe = document.getElementById("lang-de");
+  const langEn = document.getElementById("lang-en");
+  const recoverButton = document.getElementById("recover-live");
+  const saveButton = document.getElementById("save-request");
+
+  if (runButton && commandInput) runButton.addEventListener("click", () => sendCommand(commandInput.value));
+  if (refreshButton) refreshButton.addEventListener("click", () => loadState("Ansichten aktualisiert."));
+  if (characterForm) characterForm.addEventListener("submit", createCharacterFromForm);
+  if (rosterRefresh) rosterRefresh.addEventListener("click", () => loadState("Charakterliste aktualisiert."));
+  if (recoverButton) recoverButton.addEventListener("click", async () => {
+    if (guardObserverWrite(latestSnapshot?.status, "Live-Recover")) return;
+    await fetchJson('/api/recover/live', {method:'POST', headers:{'Content-Type': 'application/json'}, body:'{}'});
+    await loadState('Live-Recover ausgeführt.');
+  });
+  if (langDe) langDe.addEventListener("click", async () => {
+    currentLang = "de";
+    stopLiveUpdates();
+    await sendCommand("lang de");
+    await startLiveUpdates();
+  });
+  if (langEn) langEn.addEventListener("click", async () => {
+    currentLang = "en";
+    stopLiveUpdates();
+    await sendCommand("lang en");
+    await startLiveUpdates();
+  });
+  if (commandInput) {
+    commandInput.addEventListener("input", () => updateCommandComposerState());
+    commandInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendCommand(commandInput.value);
+      }
+    });
+  }
+  document.querySelectorAll(".quick-action").forEach((button) => {
+    button.addEventListener("click", () => sendCommand(button.dataset.command));
+  });
+  if (saveButton) saveButton.addEventListener('click', async () => {
+    if (guardObserverWrite(latestSnapshot?.status, "Safe Save")) return;
+    await fetchJson('/api/save/request', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    await loadState('Safe-Save beim Server angefragt.');
+  });
+
+  await loadState("Phase v0.7.6 geladen: map-first Dark-Fantasy-Interface aktiv.");
+  await startLiveUpdates();
+  updateCommandComposerState();
+}
+
+if (typeof document !== "undefined") {
+  void bootstrap();
+}

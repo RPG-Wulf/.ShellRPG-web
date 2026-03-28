@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/shellrpg_www/__init__.py
+src/shellrpg_www/app.py
+src/shellrpg_www/config.py
+src/shellrpg_www/gateway.py
+src/shellrpg_www/version.py
+src/shellrpg_www.egg-info/PKG-INFO
+src/shellrpg_www.egg-info/SOURCES.txt
+src/shellrpg_www.egg-info/dependency_links.txt
+src/shellrpg_www.egg-info/entry_points.txt
+src/shellrpg_www.egg-info/top_level.txt
+tests/test_foundations.py
+tests/test_phase_e.py
+tests/test_vertical_slice.py

@@ -1,0 +1,60 @@
+Metadata-Version: 2.4
+Name: shellrpg-www
+Version: 0.7.6
+Summary: Public web gateway and browser UI for the dedicated ShellRPG web process.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+
+Deutsch | [English](README.en.md)
+
+🏛️☠️🌿                                                                 🌿☠️🏛️
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  _/\______________________________________________________________/\\_     ║
+║  \_/\\                                                            /\_/     ║
+║  /_/\\   A U F G E R O L L T E   S C H R I F T R O L L E         /\_\     ║
+║  \_\/____________________________________________________________\/_/     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+# ShellRPG-www · v0.7.6
+
+## 1. Beschreibung
+
+**Artefaktrolle:** Öffentlicher Web-Gateway und Browser-Client für Karte, Bewegung, Charakterübersicht, Inventar, Stadt- und Systemansichten.
+
+**Zweck:** Dieses Artefakt ist die öffentliche Eintrittsschicht für `www.shellrpg.tld`. Es liefert HTML/CSS/JS aus, hält die Browser-Kommunikation auf Same-Origin und reicht nur eine schmale interne API an den privaten `ShellRPG-server` weiter.
+
+**Verknüpfte Artefakte:**
+- `ShellRPG-server` bleibt der private autoritative Kern und liefert nur die interne Spiel-API.
+- `ShellRPG-client` ist der shellnahe Schwester-Client.
+- `ShellRPG-wiki` liefert redigierte Dokumentation, Lore und Bedienhilfen.
+
+**Governance:** `CLIENT-PUBLIC`
+
+## 2. Abhängigkeiten
+
+- Python 3.11+
+- Browser mit modernem JavaScript-Support
+- laufender `ShellRPG-server` für echte Daten
+- lokale oder deployte WWW-Konfiguration in `config/shellrpg-www.toml`
+
+## 3. Installation
+
+```bash
+python -m pip install -e .
+shellrpg-www --config config/shellrpg-www.toml
+```
+
+Dann im Browser öffnen:
+```text
+http://127.0.0.1:8080/
+```
+
+Der Browser spricht dabei nur mit `ShellRPG-www`.
+`ShellRPG-www` proxyt `/api/*` intern an den privaten `ShellRPG-server`, standardmäßig nach `http://127.0.0.1:8765`.
+
+## 4. Feedback & Contribution
+
+Feedback sollte Browser, Auflösung und betroffene Ansicht nennen.
+Contribution soll auf Zugänglichkeit, Lesbarkeit, Gateway-Stabilität und Public-Scope achten.
+Keine sensiblen Serverlogiken oder geheimen Betriebsdetails in Web-Assets oder öffentlich ausgelieferten Routen einbetten.
+
+🏛️🌿☠️══════════════════════════════════════════════════════════════☠️🌿🏛️

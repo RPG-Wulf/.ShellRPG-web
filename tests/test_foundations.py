@@ -1,15 +1,14 @@
+from shellrpg_www.gateway import build_proxy_target
+from shellrpg_www.version import RELEASE_VERSION, SERVICE_NAME
 
-from shellrpg_server.core.bootstrap import describe_foundation
-from shellrpg_server.game_data import GEM_COMBINATIONS_BASE, WORLD
 
-def test_foundation_description_contains_phase_e_version() -> None:
-    assert "v0.4.0" in describe_foundation()
+def test_www_release_version_matches_bundle() -> None:
+    assert RELEASE_VERSION == "v0.7.6"
+    assert SERVICE_NAME == "shellrpg-www"
 
-def test_gem_combinations_include_phase_d_and_e_entries() -> None:
-    assert GEM_COMBINATIONS_BASE["bernstein"] == "storm"
-    assert GEM_COMBINATIONS_BASE["opal"] == "illusion"
-    assert GEM_COMBINATIONS_BASE["obsidian"] == "shadow"
 
-def test_world_size_is_4096_chunked() -> None:
-    assert WORLD["width"] == 4096
-    assert WORLD["height"] == 4096
+def test_proxy_target_preserves_api_path_and_query() -> None:
+    assert (
+        build_proxy_target("http://127.0.0.1:8765", "/api/state?lang=de")
+        == "http://127.0.0.1:8765/api/state?lang=de"
+    )

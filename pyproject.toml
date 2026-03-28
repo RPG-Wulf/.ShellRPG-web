@@ -3,15 +3,19 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "shellrpg-server"
-version = "0.4.0"
-description = "Private authoritative Phase E vertical slice for the ShellRPG server core."
+name = "shellrpg-www"
+version = "0.7.6"
+description = "Public web gateway and browser UI for the dedicated ShellRPG web process."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
+
+[project.scripts]
+shellrpg-www = "shellrpg_www.app:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["shellrpg_www*"]

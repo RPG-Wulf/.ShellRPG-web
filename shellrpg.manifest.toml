@@ -1,8 +1,8 @@
-artifact_name = "ShellRPG-server"
-governance_layer = "SERVER-PRIVAT"
-visibility = "owner-only"
-version = "0.4.0"
-artifact_role = "authoritative simulation core"
+artifact_name = "ShellRPG-www"
+governance_layer = "CLIENT-PUBLIC"
+visibility = "public"
+version = "v0.7.6"
+artifact_role = "public web gateway"
 release_policy = "fixes_do_not_bump_version"
-publicly_releasable = false
-dependent_public_artifacts = ["ShellRPG-client", "ShellRPG-www", "ShellRPG-wiki"]
+publicly_releasable = true
+server_contract_dependency = "ShellRPG-server internal public-safe API"

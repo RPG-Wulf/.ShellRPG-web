@@ -1,40 +1,67 @@
+
 <!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>ShellRPG-www Phase B</title>
+    <title>ShellRPG-www Phase H · v0.7.6</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="../src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/base.css" />
   </head>
   <body>
     <div id="app">
       <header class="hero">
-        <p class="eyebrow">ShellRPG-www · Phase B Vertical Slice</p>
-        <h1>Dual-Client Public Web Interface</h1>
-        <p class="lede">
-          Verbunden mit demselben autoritativen Slice wie der Terminal-Client.
-        </p>
+        <div class="hero-copy">
+          <p class="eyebrow">ShellRPG-www · Phase H · v0.7.6</p>
+          <h1>NPC-Handel, Quests, Preise & Artefaktbedingungen</h1>
+          <p class="lede">Grafischer Public Client gegen denselben autoritativen Slice wie der Terminal-Client — jetzt mit echten Händlerdialogen, Questgeber-Struktur, dienstabhängigen Kosten und bedingtem Artefaktgewebe.</p>
+        </div>
+        <section class="hero-controls">
+          <label for="command-input">Befehl</label>
+          <div class="controls-row">
+            <input id="command-input" type="text" value="look" />
+            <button id="run-command" type="button">Senden</button>
+            <button id="refresh-all" type="button">Neu laden</button>
+            <button id="recover-live" type="button">Live-Recover</button>
+            <button id="save-request" type="button">Safe Save</button>
+          </div>
+          <div class="controls-row">
+            <button class="quick-action" data-command="walk north">Norden</button>
+            <button class="quick-action" data-command="walk west">Westen</button>
+            <button class="quick-action" data-command="walk east">Osten</button>
+            <button class="quick-action" data-command="walk south">Süden</button>
+            <button class="quick-action" data-command="explore">Explore</button>
+            <button class="quick-action" data-command="hunt north">Hunt</button>
+            <button class="quick-action" data-command="gather iron">Gather Iron</button>
+            <button class="quick-action" data-command="auto battle on balanced">Auto-Battle</button>
+          </div>
+          <div class="controls-row">
+            <button id="lang-de" type="button">DE</button>
+            <button id="lang-en" type="button">EN</button>
+          </div>
+          <p class="small">Gateway: <code>/api</code> via <code>ShellRPG-www</code> zum privaten <code>ShellRPG-server</code></p>
+        </section>
       </header>
 
-      <section class="card controls">
-        <label for="command-input">Befehl</label>
-        <div class="controls-row">
-          <input id="command-input" type="text" value="look" />
-          <button id="run-command" type="button">Senden</button>
-          <button id="refresh-all" type="button">Neu laden</button>
-        </div>
-        <p class="small">Serverstandard: <code>http://127.0.0.1:8765</code></p>
-      </section>
-
-      <main class="grid">
-        <section id="status-panel" class="card"></section>
-        <section id="map-panel" class="card"></section>
-        <section id="inventory-panel" class="card"></section>
-        <section id="market-panel" class="card"></section>
-        <section id="journal-panel" class="card"></section>
-        <section id="review-panel" class="card"></section>
+      <main class="dashboard">
+        <section id="status-panel" class="panel panel-wide"></section>
+        <section id="scene-panel" class="panel panel-hero"></section>
+        <section id="map-panel" class="panel panel-wide"></section>
+        <section id="character-panel" class="panel"></section>
+        <section id="inventory-panel" class="panel"></section>
+        <section id="market-panel" class="panel"></section>
+        <section id="combat-panel" class="panel"></section>
+        <section id="city-panel" class="panel"></section>
+        <section id="weather-panel" class="panel"></section>
+        <section id="recovery-panel" class="panel"></section>
+        <section id="npc-panel" class="panel"></section>
+        <section id="brew-panel" class="panel"></section>
+        <section id="enchant-panel" class="panel"></section>
+        <section id="weave-panel" class="panel"></section>
+        <section id="journal-panel" class="panel"></section>
+        <section id="command-panel" class="panel"></section>
+        <section id="asset-panel" class="panel panel-wide"></section>
       </main>
     </div>
-    <script type="module" src="../src/app.js"></script>
+    <script type="module" src="/src/app.js"></script>
   </body>
 </html>

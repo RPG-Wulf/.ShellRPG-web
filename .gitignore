@@ -1,0 +1,74 @@
+# =============================================
+# ShellRPG-www .gitignore
+# =============================================
+
+# --- OpenAI / Codex / Agent-Dateien ---
+.codex/
+**/.codex/
+
+# --- Build / generierte Nicht-Source-Dateien ---
+.build/
+dist/
+build/
+out/
+coverage/
+.cache/
+.tmp/
+tmp/
+*.tmp
+*.cache
+*.lock
+
+# --- Frontend / Node ---
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+*.tsbuildinfo
+
+# --- Python Mischbetrieb / Tooling ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Static export / generierte Artefakte ---
+public/build/
+public/generated/
+assets/generated/
+assets/cache/
+
+# --- Logs / lokale Zustände ---
+logs/
+*.log
+playwright-report/
+test-results/
+
+# --- Environment / Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Niemals ausschließen: Source und manuelle Assets ---
+!src/
+!tests/
+!public/
+!assets/

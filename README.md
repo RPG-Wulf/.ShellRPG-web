@@ -1,48 +1,53 @@
+Deutsch | [English](README.en.md)
 
-# ShellRPG-server · v0.4.0
+🏛️☠️🌿                                                                 🌿☠️🏛️
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  _/\______________________________________________________________/\\_     ║
+║  \_/\\                                                            /\_/     ║
+║  /_/\\   A U F G E R O L L T E   S C H R I F T R O L L E         /\_\     ║
+║  \_\/____________________________________________________________\/_/     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+# ShellRPG-www · v0.7.6
 
-**Governance:** SERVER-PRIVAT  
-**Visibility:** owner-only / proprietär  
-**Phase:** E — Stadtgründung, Gouverneur, 5 Generäle, Miliz-/Garnisonslogik, überarbeitetes Kampf- und Auto-Battle-System
+## 1. Beschreibung
 
-## Enthalten
-- autoritativer lokaler Demo-Server auf `http://127.0.0.1:8765`
-- 4096×4096-Chunk-Weltgrundlage
-- Hybridkampf: Welt in Ticks, Kampf in Runden mit Reaktionsfenstern
-- Auto-Battle (`auto battle on|off|balanced|aggressive|defensive`)
-- Crafting / Socketing / Enchanting / Seelenstein-Schmiede
-- Händlerbefehle
-- Stadtgründung
-- Gouverneur + 5 Generäle
-- Milizrekrutierung
-- Tile-Buildings mit Kosten, Outputs, Konflikthinweisen
-- schwarzer Kubus mit serverseitigem Proxy und Offline-Fallback
+**Artefaktrolle:** Öffentlicher Web-Gateway und Browser-Client für Karte, Bewegung, Charakterübersicht, Inventar, Stadt- und Systemansichten.
 
-## Start
+**Zweck:** Dieses Artefakt ist die öffentliche Eintrittsschicht für `www.shellrpg.tld`. Es liefert HTML/CSS/JS aus, hält die Browser-Kommunikation auf Same-Origin und reicht nur eine schmale interne API an den privaten `ShellRPG-server` weiter.
+
+**Verknüpfte Artefakte:**
+- `ShellRPG-server` bleibt der private autoritative Kern und liefert nur die interne Spiel-API.
+- `ShellRPG-client` ist der shellnahe Schwester-Client.
+- `ShellRPG-wiki` liefert redigierte Dokumentation, Lore und Bedienhilfen.
+
+**Governance:** `CLIENT-PUBLIC`
+
+## 2. Abhängigkeiten
+
+- Python 3.11+
+- Browser mit modernem JavaScript-Support
+- laufender `ShellRPG-server` für echte Daten
+- lokale oder deployte WWW-Konfiguration in `config/shellrpg-www.toml`
+
+## 3. Installation
+
 ```bash
 python -m pip install -e .
-python -m shellrpg_server
+shellrpg-www --config config/shellrpg-www.toml
 ```
 
-## Wichtige Testkommandos
+Dann im Browser öffnen:
 ```text
-craft --item sword --material iron
-equip iron sword
-socket --slot weapon --gem ruby shard
-enchant --slot weapon
-auto battle on aggressive
-city found Morgenwacht
-city appoint governor Cassian
-city appoint general 1 Varek
-city build trade hall
-militia recruit swordfighters 2
-walk route cube
-cube enter
+http://127.0.0.1:8080/
 ```
 
-## Revisionsregel
-Reine Bug-/Build-Fixes erhöhen die Version nicht.  
-Diese Revision enthält neue funktionale Systeme und ist daher als **0.4.0 / v0.4.0** markiert.
+Der Browser spricht dabei nur mit `ShellRPG-www`.
+`ShellRPG-www` proxyt `/api/*` intern an den privaten `ShellRPG-server`, standardmäßig nach `http://127.0.0.1:8765`.
 
-## Redaktionsgrenze
-Diese README erklärt Betrieb und Oberfläche des Demo-Slices, aber keine sensiblen Sicherheits- oder Integritätsheuristiken.
+## 4. Feedback & Contribution
+
+Feedback sollte Browser, Auflösung und betroffene Ansicht nennen.
+Contribution soll auf Zugänglichkeit, Lesbarkeit, Gateway-Stabilität und Public-Scope achten.
+Keine sensiblen Serverlogiken oder geheimen Betriebsdetails in Web-Assets oder öffentlich ausgelieferten Routen einbetten.
+
+🏛️🌿☠️══════════════════════════════════════════════════════════════☠️🌿🏛️

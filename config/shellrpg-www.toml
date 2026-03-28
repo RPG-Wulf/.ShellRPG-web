@@ -1,0 +1,10 @@
+[www]
+host = "127.0.0.1"
+port = 8080
+
+[backend]
+base_url = "http://127.0.0.1:8765"
+request_timeout_seconds = 10.0
+
+[session]
+cookie_name = "shellrpg_session"

@@ -1,4 +1,9 @@
 const API_BASE = "";
+const STORAGE_KEYS = {
+  accountId: "shellrpg_player_account_id",
+  deviceId: "shellrpg_browser_device_id",
+  characterName: "shellrpg_character_name",
+};
 let currentLang = "de";
 let pollingHandle = null;
 let weatherMap = null;
@@ -10,6 +15,66 @@ let npcMenu = null;
 let brewingCatalog = null;
 let enchantingCatalog = null;
 let artifactWeave = null;
+let characterRoster = null;
+let sessionReady = false;
+const CHARACTER_FACTIONS = ["Menschen", "Amazonen", "Waldelfen", "Dryaden", "Baumwesen", "Nekari", "Ssarathi", "Salzlungen", "Orks", "Dämonen"];
+const CHARACTER_RACES = ["Mensch", "Nekari", "Ssarathi", "Salzlunge", "Waldelf", "Dryade", "Baumwesen"];
+const CHARACTER_CLASSES = ["Ritter", "Totenbeschwörer", "Kleriker", "Waldläufer", "Magier", "Dieb", "Beastmaster"];
+const ATTRIBUTE_FIELDS = [
+  { key: "strength", id: "attr-strength" },
+  { key: "dexterity", id: "attr-dexterity" },
+  { key: "accuracy", id: "attr-accuracy" },
+  { key: "intelligence", id: "attr-intelligence" },
+  { key: "wisdom", id: "attr-wisdom" },
+  { key: "speed", id: "attr-speed" },
+];
+
+function randomId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function readIdentity() {
+  return {
+    playerAccountId: window.localStorage.getItem(STORAGE_KEYS.accountId) || "",
+    deviceId: window.localStorage.getItem(STORAGE_KEYS.deviceId) || "",
+    characterName: window.localStorage.getItem(STORAGE_KEYS.characterName) || "Neowulf",
+  };
+}
+
+function writeIdentity(identity) {
+  if (identity.playerAccountId) window.localStorage.setItem(STORAGE_KEYS.accountId, identity.playerAccountId);
+  if (identity.deviceId) window.localStorage.setItem(STORAGE_KEYS.deviceId, identity.deviceId);
+  if (identity.characterName) window.localStorage.setItem(STORAGE_KEYS.characterName, identity.characterName);
+}
+
+async function ensureSession() {
+  if (sessionReady) return;
+  const identity = readIdentity();
+  if (!identity.deviceId) {
+    identity.deviceId = randomId();
+  }
+  const payload = {
+    character_name: identity.characterName || "Neowulf",
+    player_account_id: identity.playerAccountId || "",
+    device_id: identity.deviceId,
+    device_label: `www:${window.navigator.userAgent.slice(0, 48)}`,
+    auth_provider: "local-device",
+    client_nonce: randomId().replace(/-/g, "").slice(0, 16),
+    rejoin: true,
+  };
+  const login = await fetchJson("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  writeIdentity({
+    playerAccountId: login.player_account_id || identity.playerAccountId,
+    deviceId: identity.deviceId,
+    characterName: login.character_name || identity.characterName,
+  });
+  sessionReady = true;
+}
 
 async function fetchJson(path, options = undefined) {
   const separator = path.includes("?") ? "&" : "?";
@@ -31,11 +96,34 @@ function el(tag, cls, text) {
   return node;
 }
 
+function normalizeCommandText(value) {
+  return String(value || "").toLowerCase().replaceAll("_", " ").trim().replace(/\s+/g, " ");
+}
+
+function findCommandDetail(commandDetails, query) {
+  const normalized = normalizeCommandText(query);
+  if (!normalized || !Array.isArray(commandDetails)) return null;
+  let best = null;
+  commandDetails.forEach((entry) => {
+    const aliases = Array.isArray(entry.aliases) && entry.aliases.length ? entry.aliases : [entry.usage];
+    aliases.forEach((alias) => {
+      const normalizedAlias = normalizeCommandText(alias);
+      if (!normalizedAlias) return;
+      if (normalized === normalizedAlias || normalized.startsWith(`${normalizedAlias} `)) {
+        const score = normalizedAlias.length;
+        if (!best || score > best.score) best = { score, entry };
+      }
+    });
+  });
+  return best?.entry || null;
+}
+
 function renderGatewayError(message) {
   const statusPanel = document.getElementById("status-panel");
   statusPanel.innerHTML = "";
   statusPanel.append(el("h2", "", "Gateway-Verbindung"));
   statusPanel.append(el("p", "status-message", message));
+  setRosterFeedback(message, "feedback-error");
 }
 
 function cardSprite(src, label) {
@@ -46,6 +134,98 @@ function cardSprite(src, label) {
   wrap.appendChild(img);
   wrap.appendChild(el("div", "sprite-label", label));
   return wrap;
+}
+
+function setRosterFeedback(message, tone = "") {
+  const feedback = document.getElementById("roster-feedback");
+  if (!feedback) return;
+  feedback.textContent = message;
+  feedback.className = tone ? `small ${tone}` : "small";
+}
+
+function populateSelect(selectId, options) {
+  const select = document.getElementById(selectId);
+  if (!select || select.options.length) return;
+  options.forEach((option) => {
+    const node = document.createElement("option");
+    node.value = option;
+    node.textContent = option;
+    select.append(node);
+  });
+}
+
+function remainingAttributePoints() {
+  return 12 - ATTRIBUTE_FIELDS.reduce((sum, field) => {
+    const value = Number(document.getElementById(field.id)?.value || 10);
+    return sum + Math.max(0, Math.trunc(value) - 10);
+  }, 0);
+}
+
+function syncAttributeBudget() {
+  const remaining = remainingAttributePoints();
+  const budget = document.getElementById("attribute-budget");
+  if (!budget) return remaining;
+  budget.textContent = `Verbleibende Bonuspunkte: ${remaining}`;
+  budget.className = remaining < 0 ? "small feedback-error" : "small";
+  return remaining;
+}
+
+function initializeCharacterForm() {
+  populateSelect("char-faction", CHARACTER_FACTIONS);
+  populateSelect("char-race", CHARACTER_RACES);
+  populateSelect("char-class", CHARACTER_CLASSES);
+  ATTRIBUTE_FIELDS.forEach((field) => {
+    const input = document.getElementById(field.id);
+    if (input && !input.dataset.boundBudget) {
+      input.addEventListener("input", syncAttributeBudget);
+      input.dataset.boundBudget = "true";
+    }
+  });
+  syncAttributeBudget();
+}
+
+function characterPayloadFromForm() {
+  const attributes = {};
+  ATTRIBUTE_FIELDS.forEach((field) => {
+    const value = Number(document.getElementById(field.id)?.value || 10);
+    attributes[field.key] = Math.max(1, Math.min(40, Math.trunc(value) || 10));
+  });
+  return {
+    character_name: document.getElementById("char-name")?.value?.trim() || "Neowulf",
+    faction: document.getElementById("char-faction")?.value || CHARACTER_FACTIONS[0],
+    race_name: document.getElementById("char-race")?.value || CHARACTER_RACES[0],
+    class_name: document.getElementById("char-class")?.value || CHARACTER_CLASSES[0],
+    attributes,
+    language: currentLang,
+  };
+}
+
+function renderCharacterRoster(roster, status) {
+  const account = document.getElementById("roster-account");
+  const list = document.getElementById("roster-list");
+  if (!account || !list) return;
+  const accountId = roster?.player_account_id || status?.player_account_id || "unbekannt";
+  account.textContent = `Account: ${accountId} · Aktiver Charakter: ${status?.character_name || "—"}`;
+  list.innerHTML = "";
+  const entries = roster?.entries || [];
+  if (!entries.length) {
+    list.append(el("p", "small", "Noch keine Charaktere im Account vorhanden."));
+    return;
+  }
+  entries.forEach((entry, index) => {
+    const card = el("div", `roster-card${entry.active ? " is-active" : ""}`);
+    card.append(el("strong", "", `${index + 1}. ${entry.character_name}${entry.active ? " · AKTIV" : ""}`));
+    card.append(el("p", "small", `${entry.class_name}/${entry.race_name} · ${entry.faction} · Level ${entry.level}`));
+    card.append(el("p", "small", `Position: ${entry.coords_label} · ID: ${entry.character_id}`));
+    const controls = el("div", "controls-row");
+    const switchButton = el("button", "small-button", entry.active ? "Aktiv" : "Aktivieren");
+    switchButton.type = "button";
+    switchButton.disabled = !!entry.active;
+    switchButton.addEventListener("click", () => switchCharacter(entry.character_id));
+    controls.append(switchButton);
+    card.append(controls);
+    list.append(card);
+  });
 }
 
 function renderStatus(panel, status, message) {
@@ -79,6 +259,7 @@ function renderStatus(panel, status, message) {
 
   if (status.faction_tension) panel.append(el("p", "tension", status.faction_tension));
   if (status.server_id) panel.append(el("p", "small", `Server: ${status.server_id} · Kalender: ${status.calendar_source || 'local'}`));
+  if (status.player_account_id) panel.append(el("p", "small", `Account: ${status.player_account_id}`));
   if (status.combat_choices?.length) panel.append(el("p", "choices", `Reaktionsfenster: ${status.combat_choices.join(", ")}`));
 }
 
@@ -402,12 +583,39 @@ function renderJournal(panel, journal) {
   panel.append(wrap);
 }
 
-function renderCommands(panel, commands) {
+function renderCommands(panel, commands, commandDetails = []) {
   panel.innerHTML = "";
   panel.append(el("h2", "", "Befehle"));
-  const list = el("ul", "command-list");
-  commands.forEach((cmd) => list.append(el("li", "", cmd)));
+  panel.append(el("p", "small", "Hover zeigt die Langhilfe, Klick uebernimmt das Kommandobeispiel in die Eingabe."));
+  const list = el("div", "command-help-grid");
+  const details = Array.isArray(commandDetails) && commandDetails.length
+    ? commandDetails
+    : (commands || []).map((usage) => ({ usage, summary: "", details: "", category: "Befehle", aliases: [usage] }));
+  let currentCategory = "";
+  details.forEach((entry) => {
+    if (entry.category !== currentCategory) {
+      currentCategory = entry.category;
+      list.append(el("h3", "command-category", currentCategory));
+    }
+    const card = el("button", "command-help-card");
+    card.type = "button";
+    card.title = [entry.usage, entry.summary, entry.details].filter(Boolean).join("\n\n");
+    card.addEventListener("click", () => {
+      document.getElementById("command-input").value = entry.usage;
+    });
+    card.append(el("strong", "", entry.usage));
+    if (entry.summary) card.append(el("span", "small", entry.summary));
+    list.append(card);
+  });
   panel.append(list);
+}
+
+function applyCommandTooltips(commandDetails = []) {
+  document.querySelectorAll(".quick-action").forEach((button) => {
+    const detail = findCommandDetail(commandDetails, button.dataset.command || "");
+    if (!detail) return;
+    button.title = [detail.usage, detail.summary, detail.details].filter(Boolean).join("\n\n");
+  });
 }
 
 
@@ -498,7 +706,7 @@ function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, r
   renderCombat(document.getElementById("combat-panel"), snapshot.combat, snapshot.status);
   renderCity(document.getElementById("city-panel"), snapshot.city);
   renderJournal(document.getElementById("journal-panel"), snapshot.journal);
-  renderCommands(document.getElementById("command-panel"), snapshot.commands);
+  renderCommands(document.getElementById("command-panel"), snapshot.commands, snapshot.command_details || []);
   renderAssets(document.getElementById("asset-panel"), snapshot.status, snapshot.inventory, snapshot.combat, snapshot.city, snapshot.map_tiles);
   renderWeatherMap(document.getElementById('weather-panel'), weatherMap, weatherRegions);
   renderRecovery(document.getElementById('recovery-panel'), recoveryConflicts, recoveryHistory);
@@ -506,11 +714,57 @@ function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, r
   renderBrewing(document.getElementById('brew-panel'), brewingCatalog);
   renderEnchanting(document.getElementById('enchant-panel'), enchantingCatalog);
   renderArtifactWeave(document.getElementById('weave-panel'), artifactWeave);
+  renderCharacterRoster(characterRoster, snapshot.status);
+  applyCommandTooltips(snapshot.command_details || []);
+}
+
+async function switchCharacter(characterId) {
+  try {
+    await ensureSession();
+    const result = await fetchJson('/api/character/select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character_id: characterId }),
+    });
+    await loadState(result.message || 'Aktiver Charakter gewechselt.');
+  } catch (error) {
+    setRosterFeedback(`Charakterwechsel fehlgeschlagen: ${error.message}`, 'feedback-error');
+  }
+}
+
+async function createCharacterFromForm(event) {
+  event.preventDefault();
+  const remaining = syncAttributeBudget();
+  const payload = characterPayloadFromForm();
+  if (!payload.character_name) {
+    setRosterFeedback('Bitte zuerst einen Charakternamen eingeben.', 'feedback-error');
+    return;
+  }
+  if (remaining < 0) {
+    setRosterFeedback('Zu viele Attributpunkte vergeben. Maximal 12 Bonuspunkte sind erlaubt.', 'feedback-error');
+    return;
+  }
+  try {
+    await ensureSession();
+    const result = await fetchJson('/api/character/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!result.ok) {
+      setRosterFeedback(result.message || 'Charakter konnte nicht erstellt werden.', 'feedback-error');
+      return;
+    }
+    await loadState(result.message || `Charakter ${result.character_name || payload.character_name} erstellt.`);
+  } catch (error) {
+    setRosterFeedback(`Charaktererstellung fehlgeschlagen: ${error.message}`, 'feedback-error');
+  }
 }
 
 async function loadState(messageOverride = null) {
   try {
-    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave] = await Promise.all([
+    await ensureSession();
+    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
       fetchJson('/api/state'),
       fetchJson('/api/weather/map?radius=3'),
       fetchJson('/api/recovery/conflicts'),
@@ -519,7 +773,8 @@ async function loadState(messageOverride = null) {
       fetchJson('/api/npcs'),
       fetchJson('/api/brewing/catalog'),
       fetchJson('/api/enchanting/catalog'),
-      fetchJson('/api/artifact/weave')
+      fetchJson('/api/artifact/weave'),
+      fetchJson('/api/characters')
     ]);
     weatherMap = freshWeatherMap;
     recoveryConflicts = freshRecovery;
@@ -529,20 +784,29 @@ async function loadState(messageOverride = null) {
     brewingCatalog = freshBrewing;
     enchantingCatalog = freshEnchanting;
     artifactWeave = freshWeave;
+    characterRoster = freshRoster;
     if (!npcMenu && freshNpcs?.entries?.length) {
       try { npcMenu = await fetchJson(`/api/npcs/menu?name=${encodeURIComponent(freshNpcs.entries[0].name)}`); } catch (_) {}
     }
+    writeIdentity({
+      playerAccountId: snapshot.status.player_account_id,
+      deviceId: readIdentity().deviceId,
+      characterName: snapshot.status.character_name,
+    });
     if (messageOverride) snapshot.message = messageOverride;
     renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
+    if (messageOverride) setRosterFeedback(messageOverride, 'feedback-success');
   } catch (error) {
+    sessionReady = false;
     renderGatewayError(`ShellRPG-server aktuell nicht erreichbar: ${error.message}`);
   }
 }
 
 async function sendCommand(command) {
   try {
+    await ensureSession();
     const payload = JSON.stringify({ command });
-    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave] = await Promise.all([
+    const [snapshot, freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
       fetchJson('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload }),
       fetchJson('/api/weather/map?radius=3'),
       fetchJson('/api/recovery/conflicts'),
@@ -551,7 +815,8 @@ async function sendCommand(command) {
       fetchJson('/api/npcs'),
       fetchJson('/api/brewing/catalog'),
       fetchJson('/api/enchanting/catalog'),
-      fetchJson('/api/artifact/weave')
+      fetchJson('/api/artifact/weave'),
+      fetchJson('/api/characters')
     ]);
     weatherMap = freshWeatherMap;
     recoveryConflicts = freshRecovery;
@@ -561,11 +826,18 @@ async function sendCommand(command) {
     brewingCatalog = freshBrewing;
     enchantingCatalog = freshEnchanting;
     artifactWeave = freshWeave;
+    characterRoster = freshRoster;
     if (freshNpcs?.entries?.length) {
       try { npcMenu = await fetchJson(`/api/npcs/menu?name=${encodeURIComponent(freshNpcs.entries[0].name)}`); } catch (_) {}
     }
+    writeIdentity({
+      playerAccountId: snapshot.status.player_account_id,
+      deviceId: readIdentity().deviceId,
+      characterName: snapshot.status.character_name,
+    });
     renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
   } catch (error) {
+    sessionReady = false;
     renderGatewayError(`Kommando konnte nicht an den privaten Server zugestellt werden: ${error.message}`);
   }
 }
@@ -575,9 +847,15 @@ function startPolling() {
   pollingHandle = window.setInterval(() => loadState(), 1000);
 }
 
+initializeCharacterForm();
+
 const commandInput = document.getElementById("command-input");
+const characterForm = document.getElementById("character-create-form");
+const rosterRefresh = document.getElementById("roster-refresh");
 document.getElementById("run-command").addEventListener("click", () => sendCommand(commandInput.value));
 document.getElementById("refresh-all").addEventListener("click", () => loadState("Ansichten aktualisiert."));
+if (characterForm) characterForm.addEventListener("submit", createCharacterFromForm);
+if (rosterRefresh) rosterRefresh.addEventListener("click", () => loadState("Charakterliste aktualisiert."));
 const recoverButton = document.getElementById("recover-live");
 if (recoverButton) recoverButton.addEventListener("click", async () => {
   await fetchJson('/api/recover/live', {method:'POST', headers:{'Content-Type': 'application/json'}, body:'{}'});

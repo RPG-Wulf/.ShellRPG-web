@@ -44,6 +44,65 @@
 
       <main class="dashboard">
         <section id="status-panel" class="panel panel-wide"></section>
+        <section id="roster-panel" class="panel panel-wide">
+          <div class="roster-layout">
+            <div class="stack">
+              <h2>Charakterverwaltung</h2>
+              <p id="roster-account" class="small">Account wird geladen ...</p>
+              <p id="roster-feedback" class="small">Client und Web bedienen denselben aktiven serverseitigen Charakterzustand.</p>
+              <div id="roster-list" class="roster-list"></div>
+            </div>
+            <form id="character-create-form" class="character-form">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Name</span>
+                  <input id="char-name" type="text" maxlength="32" value="Neowulf" autocomplete="off" required />
+                </label>
+                <label class="field">
+                  <span>Fraktion</span>
+                  <select id="char-faction"></select>
+                </label>
+                <label class="field">
+                  <span>Rasse</span>
+                  <select id="char-race"></select>
+                </label>
+                <label class="field">
+                  <span>Klasse</span>
+                  <select id="char-class"></select>
+                </label>
+                <label class="field">
+                  <span>Stärke</span>
+                  <input id="attr-strength" type="number" min="1" max="40" value="10" />
+                </label>
+                <label class="field">
+                  <span>Geschick</span>
+                  <input id="attr-dexterity" type="number" min="1" max="40" value="10" />
+                </label>
+                <label class="field">
+                  <span>Präzision</span>
+                  <input id="attr-accuracy" type="number" min="1" max="40" value="10" />
+                </label>
+                <label class="field">
+                  <span>Intelligenz</span>
+                  <input id="attr-intelligence" type="number" min="1" max="40" value="10" />
+                </label>
+                <label class="field">
+                  <span>Weisheit</span>
+                  <input id="attr-wisdom" type="number" min="1" max="40" value="10" />
+                </label>
+                <label class="field">
+                  <span>Tempo</span>
+                  <input id="attr-speed" type="number" min="1" max="40" value="10" />
+                </label>
+              </div>
+              <p id="attribute-budget" class="small">Verbleibende Bonuspunkte: 12</p>
+              <div class="controls-row">
+                <button id="character-create" type="submit">Charakter erstellen</button>
+                <button id="roster-refresh" type="button">Charaktere laden</button>
+              </div>
+            </form>
+          </div>
+        </section>
         <section id="scene-panel" class="panel panel-hero"></section>
         <section id="map-panel" class="panel panel-wide"></section>
         <section id="character-panel" class="panel"></section>

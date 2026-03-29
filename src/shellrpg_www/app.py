@@ -4,6 +4,7 @@ import argparse
 from dataclasses import replace
 
 from shellrpg_www.config import load_www_config
+from shellrpg_www.dynv6 import update_dynv6_from_local_secret
 from shellrpg_www.gateway import run_gateway
 from shellrpg_www.version import RELEASE_VERSION
 
@@ -23,6 +24,13 @@ def main(argv: list[str] | None = None) -> int:
         port=args.port or config.port,
         backend_base_url=args.backend or config.backend_base_url,
     )
+    try:
+        dynv6_result = update_dynv6_from_local_secret()
+    except Exception as exc:
+        print(f"dynv6 update skipped: {exc}")
+    else:
+        if dynv6_result:
+            print(f"dynv6 update completed for ShellRPG-www: {dynv6_result}")
     run_gateway(config)
     return 0
 

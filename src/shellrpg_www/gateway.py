@@ -9,6 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
+from shellrpg_www.assets import load_asset_payload
 from shellrpg_www.config import WWWConfig
 from shellrpg_www.version import HTTP_SERVER_VERSION, RELEASE_VERSION, SERVICE_NAME
 
@@ -149,6 +150,13 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 return
             self._write_bytes(asset.read_bytes(), guess_content_type(asset), extra_headers={"Cache-Control": "no-store"})
 
+        def _serve_cdn_asset(self) -> bool:
+            asset = load_asset_payload(config, root, self.path)
+            if asset is None:
+                return False
+            self._write_bytes(asset.body, asset.content_type, extra_headers={"Cache-Control": "public, max-age=60"})
+            return True
+
         def _proxy_request(self) -> None:
             body = self._read_body() if self.command in {"POST", "PUT", "PATCH"} else b""
             headers: dict[str, str] = {}
@@ -272,6 +280,11 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             path = urlsplit(self.path).path
             if path == "/health":
                 self._handle_health()
+                return
+            if path.startswith(config.asset_proxy_route.rstrip("/") + "/"):
+                if self._serve_cdn_asset():
+                    return
+                self._write_json({"ok": False, "message": f"Unknown asset path: {path}"}, status=404)
                 return
             if path.startswith("/api/"):
                 self._proxy_request()

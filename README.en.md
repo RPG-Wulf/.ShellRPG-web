@@ -28,12 +28,19 @@
 - browser with modern JavaScript support
 - running `ShellRPG-server` for live data
 - local or deployed WWW configuration in `config/shellrpg-www.toml`
+- dynv6 secrets must stay in ignored local `secrets/` or `var/` files
 
 ## 3. Installation
 
 ```bash
 python -m pip install -e .
 shellrpg-www --config config/shellrpg-www.toml
+```
+
+Or use the lightweight wrapper:
+
+```bash
+./shell.sh
 ```
 
 Then open in your browser:
@@ -43,6 +50,20 @@ http://127.0.0.1:8080/
 
 The browser only talks to `ShellRPG-www`.
 `ShellRPG-www` proxies `/api/*` internally to the private `ShellRPG-server`, by default at `http://127.0.0.1:8765`.
+It also serves `/asset/*` same-origin, preferring the GitHub-backed
+`ShellRPG-cdn` path and then dynv6 and local workspace fallbacks.
+Relative config, secret, and asset-origin paths are resolved against the WWW
+endpoint or the loaded config file.
+
+`ShellRPG-www` remains a Python gateway, not a TYPO3/TypoScript CMS endpoint.
+If a future CMS is ever needed, it should be planned separately; only then
+would a dedicated `tx_shellrpg_*` plugin line make sense.
+
+Current canon preparation:
+- redacted WWW views must be ready to distinguish monster, hive, wildlife,
+  nature, and demons more clearly
+- inventory and status views are being prepared for six ring slots per
+  character
 
 ## 4. Feedback & Contribution
 

@@ -36,6 +36,8 @@ venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+pytest-cache-files-*/
+pytest-of-*/
 .mypy_cache/
 .ruff_cache/
 
@@ -48,6 +50,7 @@ assets/cache/
 # --- Logs / lokale Zustände ---
 logs/
 *.log
+var/
 playwright-report/
 test-results/
 

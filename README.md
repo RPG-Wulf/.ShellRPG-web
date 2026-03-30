@@ -66,6 +66,9 @@ Aktuelle Kanonvorbereitung:
   Daemonen kuenftig klarer unterscheiden
 - Inventar- und Statusansichten werden auf sechs Ringslots pro Charakter
   vorbereitet
+- Kartentooltips koennen jetzt redigierte Tile-Welthinweise wie ein
+  `Milieu` aus dem serverseitigen Kartenpayload anzeigen; die WWW-Schicht
+  fuehrt dafuer bewusst keine eigene Parallelterminologie ein
 
 ## 4. Feedback & Contribution
 

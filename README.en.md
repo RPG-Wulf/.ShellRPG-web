@@ -64,6 +64,9 @@ Current canon preparation:
   nature, and demons more clearly
 - inventory and status views are being prepared for six ring slots per
   character
+- map tooltips can now surface a redacted tile `Milieu` from the server map
+  payload; the WWW layer intentionally avoids introducing its own parallel
+  wording for the same public-safe hint
 
 ## 4. Feedback & Contribution
 

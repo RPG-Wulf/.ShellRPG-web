@@ -190,6 +190,10 @@ function normalizeCommandText(value) {
   return String(value || "").toLowerCase().replaceAll("_", " ").trim().replace(/\s+/g, " ");
 }
 
+function prettySlotLabel(value) {
+  return String(value || "").replaceAll("_", " ").trim();
+}
+
 function findCommandDetail(commandDetails, query) {
   const normalized = normalizeCommandText(query);
   if (!normalized || !Array.isArray(commandDetails)) return null;
@@ -429,8 +433,18 @@ function renderCharacter(panel, status, equipment, buffs) {
   list.append(el("p", "", `Dialogmodus: ${status.dialogue_mode ? status.dialogue_target : "nein"}`));
   if (equipment?.length) {
     const wrap = el("div", "sprite-row");
-    equipment.forEach((entry) => wrap.append(cardSprite(entry.sprite, `${entry.slot}: ${entry.item_name}`)));
-    list.append(wrap);
+    equipment
+      .filter((entry) => entry?.occupied !== false && entry?.sprite)
+      .forEach((entry) => wrap.append(cardSprite(entry.sprite, `${prettySlotLabel(entry.slot)}: ${entry.item_name}`)));
+    if (wrap.childNodes.length) list.append(wrap);
+    const slots = el("ul", "chip-list");
+    equipment.forEach((entry) => {
+      const text = entry?.occupied === false
+        ? `${prettySlotLabel(entry.slot)}: leer`
+        : `${prettySlotLabel(entry.slot)}: ${entry.item_name}`;
+      slots.append(el("li", "chip", text));
+    });
+    list.append(slots);
   }
   if (buffs?.length) {
     const buffsNode = el("ul", "chip-list");

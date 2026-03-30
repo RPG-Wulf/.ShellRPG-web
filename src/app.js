@@ -538,6 +538,8 @@ function renderCity(panel, city) {
   panel.append(el("p", "", `Steuern: ${city.taxes_silver}s · Bevölkerung: ${city.population} · Forschung: ${city.research_points}`));
   if (city.region_line) panel.append(el("p", "small", city.region_line));
   if (city.weather_pressure_line) panel.append(el("p", "small", city.weather_pressure_line));
+  if (city.urban_suspicion_line) panel.append(el("p", "small", city.urban_suspicion_line));
+  if (city.urban_diagnosis_line) panel.append(el("p", "small", city.urban_diagnosis_line));
   const blocks = [
     ["Bauwerke", city.building_lines],
     ["Miliz", city.militia_lines],

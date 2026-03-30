@@ -69,6 +69,10 @@ Aktuelle Kanonvorbereitung:
 - Kartentooltips koennen jetzt redigierte Tile-Welthinweise wie ein
   `Milieu` aus dem serverseitigen Kartenpayload anzeigen; die WWW-Schicht
   fuehrt dafuer bewusst keine eigene Parallelterminologie ein
+- derselbe Public-Vertrag traegt jetzt auch eine redigierte
+  `urban_suspicion_line`; Kartentooltips, Fokusbereich und Stadtansicht
+  duerfen diesen Stadthinweis anzeigen, ohne eigene Verdachtsregeln im
+  Browser zu erfinden
 
 ## 4. Feedback & Contribution
 

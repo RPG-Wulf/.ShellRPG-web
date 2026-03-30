@@ -67,6 +67,9 @@ Current canon preparation:
 - map tooltips can now surface a redacted tile `Milieu` from the server map
   payload; the WWW layer intentionally avoids introducing its own parallel
   wording for the same public-safe hint
+- the same public contract now also carries a redacted
+  `urban_suspicion_line`; map tooltips, focus areas, and city views may show
+  that urban hint without inventing separate browser-side suspicion logic
 
 ## 4. Feedback & Contribution
 

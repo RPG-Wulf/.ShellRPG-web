@@ -73,6 +73,10 @@ Aktuelle Kanonvorbereitung:
   `urban_suspicion_line`; Kartentooltips, Fokusbereich und Stadtansicht
   duerfen diesen Stadthinweis anzeigen, ohne eigene Verdachtsregeln im
   Browser zu erfinden
+- derselbe Public-Vertrag traegt jetzt auch eine redigierte
+  `urban_diagnosis_line` aus dem persistierten urbanen Verdachtspool; WWW-
+  Tooltips, Fokusbereich und Stadtansicht bleiben dabei an denselben
+  serverseitigen Subject-/Hint-/Relations-Refs gebunden
 
 ## 4. Feedback & Contribution
 

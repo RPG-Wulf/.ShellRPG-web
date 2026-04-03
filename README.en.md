@@ -70,6 +70,10 @@ Current canon preparation:
 - the same public contract now also carries a redacted
   `urban_suspicion_line`; map tooltips, focus areas, and city views may show
   that urban hint without inventing separate browser-side suspicion logic
+- the same public contract now also carries a redacted
+  `urban_diagnosis_line` from the persisted urban suspicion pool; WWW
+  tooltips, focus areas, and city views remain tied to the same server-side
+  subject refs, hint refs, and relation ids
 
 ## 4. Feedback & Contribution
 

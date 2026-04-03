@@ -53,6 +53,7 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
   const focusHasEncounter = Array.isArray(combat) && combat.length > 0;
   const mood = centerMood(status);
   let currentUrbanSuspicionLine = "";
+  let currentUrbanDiagnosisLine = "";
 
   const cells = [];
   for (let y = center.y - GRID_RADIUS; y <= center.y + GRID_RADIUS; y += 1) {
@@ -77,6 +78,7 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
         spawnMilieu: tile?.spawn_milieu || "",
         settlementName: tile?.settlement_name || "",
         urbanSuspicionLine: tile?.urban_suspicion_line || "",
+        urbanDiagnosisLine: tile?.urban_diagnosis_line || "",
         poiKnown: tile?.poi_known || [],
         knownResources: tile?.known_resources || [],
         weatherLabel,
@@ -87,7 +89,10 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
         discovered,
         mood,
       });
-      if (current) currentUrbanSuspicionLine = tile?.urban_suspicion_line || "";
+      if (current) {
+        currentUrbanSuspicionLine = tile?.urban_suspicion_line || "";
+        currentUrbanDiagnosisLine = tile?.urban_diagnosis_line || "";
+      }
     }
   }
 
@@ -99,7 +104,11 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
       mood,
       image: assetPath(status?.media_file),
       title: status?.location_label || "Unkartiertes Zentrum",
-      subtitle: [status?.overlay_message || "Die Lage verdichtet sich im Zentrum dieses Felds.", currentUrbanSuspicionLine]
+      subtitle: [
+        status?.overlay_message || "Die Lage verdichtet sich im Zentrum dieses Felds.",
+        currentUrbanSuspicionLine,
+        currentUrbanDiagnosisLine,
+      ]
         .filter(Boolean)
         .join(" · "),
       encounterSummary: focusHasEncounter
@@ -169,6 +178,7 @@ export function renderMapPanel(
       cell.biome && cell.terrain ? `${cell.biome} · ${cell.terrain}` : "",
       cell.spawnMilieu ? `Milieu: ${cell.spawnMilieu}` : "",
       cell.urbanSuspicionLine ? `Stadthinweis: ${cell.urbanSuspicionLine}` : "",
+      cell.urbanDiagnosisLine ? `Stadtdiagnose: ${cell.urbanDiagnosisLine}` : "",
       cell.weatherLabel ? `Wetter: ${cell.weatherLabel}` : "",
       cell.building ? `Bauwerk: ${cell.building}` : "",
       cell.poiKnown.length ? `POI: ${cell.poiKnown.join(", ")}` : "",

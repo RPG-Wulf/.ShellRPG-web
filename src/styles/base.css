@@ -438,6 +438,54 @@ select:disabled {
   padding: var(--spacing-4);
 }
 
+.matrix-conflict-card,
+.matrix-conflict-card__group {
+  position: relative;
+  background: var(--panel-bg-soft);
+  border: 1px solid rgba(210, 178, 119, 0.12);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.matrix-conflict-card {
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.matrix-conflict-card[open] {
+  border-color: rgba(210, 178, 119, 0.3);
+}
+
+.matrix-conflict-card__summary {
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.matrix-conflict-card__summary::-webkit-details-marker {
+  display: none;
+}
+
+.matrix-conflict-card__body {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid rgba(210, 178, 119, 0.14);
+}
+
+.matrix-conflict-card__group {
+  padding: var(--spacing-3);
+}
+
+.matrix-conflict-card__field-list {
+  margin: var(--spacing-2) 0 0;
+  padding-left: 18px;
+  color: rgba(232, 221, 198, 0.74);
+}
+
+.matrix-conflict-card__field-list li + li {
+  margin-top: 4px;
+}
+
 .roster-card.is-active {
   border-color: rgba(210, 178, 119, 0.45);
   box-shadow:

@@ -834,6 +834,180 @@ function renderRecovery(panel, conflicts, history) {
   }
 }
 
+function matrixConflictGroupForField(field) {
+  if (["discovered_tiles", "known_resource_tiles", "points_of_interest"].includes(field)) return "knowledge";
+  if (["journal", "progress_flags"].includes(field)) return "progress";
+  if (field === "inventory") return "inventory";
+  return "other";
+}
+
+function matrixConflictGroupLabel(group) {
+  if (group === "knowledge") return "Wissensstand";
+  if (group === "progress") return "Fortschritt";
+  if (group === "inventory") return "Inventar";
+  return "Sonstiges";
+}
+
+function matrixConflictFieldLabel(field) {
+  const labels = {
+    discovered_tiles: "entdeckte Tiles",
+    known_resource_tiles: "Ressourcenwissen",
+    points_of_interest: "POIs",
+    journal: "Journal",
+    progress_flags: "Fortschrittsflags",
+    inventory: "fehlende Inventar-Items",
+  };
+  return labels[field] || prettySlotLabel(field);
+}
+
+function normalizeMatrixCharacterConflicts(matrix, mergeConflicts) {
+  const explicit = Array.isArray(matrix.character_conflicts) ? matrix.character_conflicts : [];
+  const fallback = explicit.length
+    ? explicit
+    : (Array.isArray(mergeConflicts) ? mergeConflicts.filter((entry) => entry.scope === "character") : []);
+
+  return fallback.map((rawEntry) => {
+    const entry = rawEntry || {};
+    const seenFields = new Set();
+    const mergedPlayerFields = (Array.isArray(entry.merged_player_fields) ? entry.merged_player_fields : [])
+      .map((field) => String(field || "").trim())
+      .filter((field) => field && !seenFields.has(field) && seenFields.add(field));
+
+    const grouped = {};
+    mergedPlayerFields.forEach((field) => {
+      const group = matrixConflictGroupForField(field);
+      if (!grouped[group]) grouped[group] = [];
+      grouped[group].push(field);
+    });
+    const groupOrder = ["knowledge", "progress", "inventory", "other"];
+    const mergedFieldGroups = (Array.isArray(entry.merged_field_groups) && entry.merged_field_groups.length
+      ? entry.merged_field_groups
+      : groupOrder
+          .filter((group) => grouped[group]?.length)
+          .map((group) => ({
+            group,
+            field_count: grouped[group].length,
+            fields: grouped[group],
+          })))
+      .map((groupEntry) => {
+        const fields = Array.isArray(groupEntry.fields)
+          ? groupEntry.fields.map((field) => String(field || "").trim()).filter(Boolean)
+          : [];
+        return {
+          group: String(groupEntry.group || "").trim() || "other",
+          field_count: groupEntry.field_count ?? fields.length,
+          fields,
+        };
+      });
+
+    return {
+      player_account_id: entry.player_account_id || "",
+      character_id: entry.character_id || "",
+      character_name: entry.character_name || "",
+      winner: entry.winner || "",
+      preferred_tick: entry.preferred_tick ?? 0,
+      fallback_tick: entry.fallback_tick ?? 0,
+      merged_player_fields: mergedPlayerFields,
+      merged_player_field_count: entry.merged_player_field_count ?? mergedPlayerFields.length,
+      merged_field_groups: mergedFieldGroups,
+    };
+  });
+}
+
+function matrixConflictSourceLabels(matrix) {
+  const labels = matrix?.last_conflict_log?.source_labels;
+  if (labels && typeof labels === "object") return labels;
+  return { preferred: "preferred", fallback: "fallback" };
+}
+
+function matrixConflictWinnerLabel(entry, matrix) {
+  const sourceLabels = matrixConflictSourceLabels(matrix);
+  const raw = String(entry?.winner || "").trim();
+  return sourceLabels[raw] || raw || "unbekannt";
+}
+
+function matrixConflictGroupSummary(entry) {
+  if (!Array.isArray(entry?.merged_field_groups) || !entry.merged_field_groups.length) {
+    return "keine feldweisen Ergaenzungen";
+  }
+  return entry.merged_field_groups
+    .map((group) => `${matrixConflictGroupLabel(group.group)} ${group.field_count ?? group.fields?.length ?? 0}`)
+    .join(" · ");
+}
+
+function matrixConflictCompareHint(entry, matrix) {
+  const winner = matrixConflictWinnerLabel(entry, matrix);
+  if (!entry.merged_player_field_count) {
+    return `Vergleich: ${winner} hat den Slot ohne zusaetzliche Feld-Merges gewonnen.`;
+  }
+  return `Vergleich: ${winner} fuehrt den Slot; ${matrixConflictGroupSummary(entry)} wurden dabei konservativ erhalten.`;
+}
+
+function matrixConflictImportHint(entry, matrix) {
+  const winner = matrixConflictWinnerLabel(entry, matrix);
+  const preferredRemote = Boolean(matrix?.health?.preferred_remote);
+  if (winner === "remote" || (preferredRemote && String(entry?.winner || "") === "preferred")) {
+    return "Import-Hinweis: Remote war hier fuehrend. Ein manueller Zusatzimport ist meist nur noch fuer tieferen Vergleich noetig, nicht fuer die bereits gemergten Felder.";
+  }
+  if (winner === "local") {
+    return "Import-Hinweis: Lokal blieb fuehrend. Ein weiterer Import lohnt sich vor allem, wenn du einen aelteren Remote-Stand bewusst gegenpruefen willst.";
+  }
+  return "Import-Hinweis: Der Matrix-Merge hat den Konflikt bereits verarbeitet; nutze den Drilldown vor allem zum Nachvollziehen der uebernommenen Feldgruppen.";
+}
+
+function renderMatrixCharacterConflictCard(entry, matrix, index = 0) {
+  const details = document.createElement("details");
+  details.className = "matrix-conflict-card";
+  if (index === 0) details.open = true;
+
+  const summary = document.createElement("summary");
+  summary.className = "matrix-conflict-card__summary";
+  summary.append(el("strong", "", `${entry.character_name || entry.character_id || "Charakter"}`));
+  summary.append(
+    el(
+      "span",
+      "small",
+      `Gewinner ${matrixConflictWinnerLabel(entry, matrix)} · Tick ${entry.preferred_tick ?? "—"}/${entry.fallback_tick ?? "—"}`,
+    ),
+  );
+  summary.append(el("span", "small", `${entry.player_account_id || "account"}`));
+  details.append(summary);
+
+  const body = el("div", "matrix-conflict-card__body stack");
+  body.append(el("p", "small", matrixConflictCompareHint(entry, matrix)));
+  body.append(el("p", "small", matrixConflictImportHint(entry, matrix)));
+
+  if (Array.isArray(entry.merged_field_groups) && entry.merged_field_groups.length) {
+    const groups = el("div", "stack");
+    groups.append(el("h4", "small-head", "Merge-Gruppen"));
+    entry.merged_field_groups.forEach((group) => {
+      const card = el("div", "matrix-conflict-card__group");
+      card.append(
+        el(
+          "p",
+          "small",
+          `${matrixConflictGroupLabel(group.group)} · ${group.field_count ?? group.fields?.length ?? 0} Feld${(group.field_count ?? group.fields?.length ?? 0) === 1 ? "" : "er"}`,
+        ),
+      );
+      const list = document.createElement("ul");
+      list.className = "matrix-conflict-card__field-list";
+      (Array.isArray(group.fields) ? group.fields : []).forEach((field) => {
+        const item = document.createElement("li");
+        item.textContent = matrixConflictFieldLabel(field);
+        list.append(item);
+      });
+      card.append(list);
+      groups.append(card);
+    });
+    body.append(groups);
+  } else {
+    body.append(el("p", "small", "Dieser Konflikt war eine reine Winner-Entscheidung ohne zusaetzliche Feldlisten."));
+  }
+
+  details.append(body);
+  return details;
+}
+
 function renderMatrixHealth(panel, matrix) {
   panel.innerHTML = "";
   panel.append(el("h2", "", "Servermatrix"));
@@ -850,8 +1024,10 @@ function renderMatrixHealth(panel, matrix) {
   const health = matrix.health || {};
   const local = matrix.local || {};
   const chosen = matrix.chosen || {};
+  const conflictSummary = matrix.conflict_summary || {};
   const conflicts = Array.isArray(matrix.conflicts) ? matrix.conflicts : [];
   const mergeConflicts = Array.isArray(matrix.last_merge_conflicts) ? matrix.last_merge_conflicts : [];
+  const characterConflicts = normalizeMatrixCharacterConflicts(matrix, mergeConflicts);
   const healthTone = health.status === "healthy"
     ? "feedback-success"
     : (health.status === "disabled" || health.status === "degraded" || health.status === "isolated" || health.status === "syncing-needed"
@@ -863,8 +1039,15 @@ function renderMatrixHealth(panel, matrix) {
   const metrics = el("div", "stack");
   metrics.append(el("p", "small", `Lokal: ${local.server_id || "—"} · Tick ${local.latest_tick ?? 0} · Grund ${local.reason || "—"}`));
   metrics.append(el("p", "small", `Bevorzugt: ${chosen.source || "local"} · ${chosen.server_id || "—"} · Tick ${chosen.latest_tick ?? 0}`));
-  metrics.append(el("p", "small", `Peers: frisch ${health.fresh_peer_count ?? 0} · stale ${health.stale_peer_count ?? 0} · Merge-Konflikte ${health.merge_conflict_count ?? 0}`));
+  metrics.append(el("p", "small", `Peers: frisch ${health.fresh_peer_count ?? 0} · stale ${health.stale_peer_count ?? 0} · Merge-Konflikte ${health.merge_conflict_count ?? 0} · Char-Konflikte ${health.character_conflict_count ?? conflictSummary.character_conflict_count ?? characterConflicts.length}`));
+  metrics.append(el("p", "small", `Feld-Merges: Charaktere ${health.characters_with_field_merges ?? conflictSummary.characters_with_field_merges ?? 0} · Felder ${health.field_merge_count ?? conflictSummary.field_merge_count ?? 0}`));
   metrics.append(el("p", "small", `Letzter Sync: ${health.last_sync_result || "idle"} · Quelle ${health.last_sync_source || "—"} · Tick ${health.last_sync_tick ?? 0}`));
+  if (conflictSummary.field_group_counts && Object.keys(conflictSummary.field_group_counts).length) {
+    const groupText = Object.entries(conflictSummary.field_group_counts)
+      .map(([group, count]) => `${matrixConflictGroupLabel(group)} ${count}`)
+      .join(" · ");
+    metrics.append(el("p", "small", `Merge-Gruppen: ${groupText}`));
+  }
   panel.append(metrics);
 
   if (conflicts.length) {
@@ -887,20 +1070,20 @@ function renderMatrixHealth(panel, matrix) {
     panel.append(list);
   }
 
-  if (mergeConflicts.length) {
+  if (characterConflicts.length) {
+    const characterList = el("div", "stack");
+    characterList.append(el("h3", "", "Betroffene Charaktere"));
+    characterConflicts.slice(0, 6).forEach((entry) => {
+      characterList.append(renderMatrixCharacterConflictCard(entry, matrix, characterList.childElementCount - 1));
+    });
+    panel.append(characterList);
+  }
+
+  const nonCharacterMergeConflicts = mergeConflicts.filter((entry) => entry.scope !== "character");
+  if (nonCharacterMergeConflicts.length) {
     const mergeList = el("div", "stack");
-    mergeList.append(el("h3", "", "Letzte Merge-Konflikte"));
-    mergeConflicts.slice(0, 6).forEach((entry) => {
-      if (entry.scope === "character") {
-        mergeList.append(
-          el(
-            "p",
-            "small",
-            `${entry.player_account_id || "account"} · ${entry.character_name || entry.character_id || "character"} · Gewinner ${entry.winner || "—"} · Tick ${entry.preferred_tick ?? "—"}/${entry.fallback_tick ?? "—"}`,
-          ),
-        );
-        return;
-      }
+    mergeList.append(el("h3", "", "Weitere Merge-Konflikte"));
+    nonCharacterMergeConflicts.slice(0, 6).forEach((entry) => {
       if (entry.scope === "active-character") {
         mergeList.append(
           el(
@@ -914,7 +1097,7 @@ function renderMatrixHealth(panel, matrix) {
       mergeList.append(el("p", "small", JSON.stringify(entry)));
     });
     panel.append(mergeList);
-  } else {
+  } else if (!characterConflicts.length) {
     panel.append(el("p", "small", "Keine letzten Matrix-Merge-Konflikte bekannt."));
   }
 }

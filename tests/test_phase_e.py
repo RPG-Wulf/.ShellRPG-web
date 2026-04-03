@@ -21,3 +21,7 @@ def test_www_bundle_exposes_matrix_health_panel_contract() -> None:
     assert 'id="matrix-panel"' in index_html
     assert "/api/matrix/health" in app_js
     assert "function renderMatrixHealth" in app_js
+    assert "character_conflicts" in app_js
+    assert "Betroffene Charaktere" in app_js
+    assert "function renderMatrixCharacterConflictCard" in app_js
+    assert "Import-Hinweis" in app_js

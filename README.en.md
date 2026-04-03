@@ -57,6 +57,10 @@ endpoint or the loaded config file.
 - the browser now also consumes the explicit matrix diagnostics contract
   `GET /api/matrix/health` to render a same-origin `Server Matrix` panel for
   WWW/gateway diagnostics
+- that panel now also renders condensed per-character merge conflicts,
+  including merge groups such as knowledge, progress, and inventory
+- each character conflict now also exposes an expandable drilldown with field
+  lists and short compare/import hints per conflict
 - if an older server does not know that endpoint yet, or temporarily fails to
   deliver it, `ShellRPG-www` falls back to a readable notice and keeps the
   rest of the UI working

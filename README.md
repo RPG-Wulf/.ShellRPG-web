@@ -58,6 +58,11 @@ lokale Workspace-Fallbacks.
 - der Browser nutzt jetzt zusaetzlich den expliziten Matrix-/Diagnosevertrag
   `GET /api/matrix/health`, um einen same-origin `Servermatrix`-Panelpfad
   fuer WWW-/Gateway-Diagnostik aufzubauen
+- dieser Panelpfad zeigt feldweise Character-Konflikte jetzt zusaetzlich
+  verdichtet pro Figur an, inklusive Merge-Gruppen wie Wissensstand,
+  Fortschritt und Inventar
+- pro Character-Konflikt gibt es dort jetzt einen aufklappbaren Drilldown mit
+  Feldlisten sowie kurzen Vergleichs- und Importhinweisen je Konflikt
 - falls ein aelterer Server den Endpunkt noch nicht kennt oder temporaer
   nicht liefert, faellt `ShellRPG-www` ruhig auf einen lesbaren Hinweis
   zurueck und haelt die restliche UI weiter funktionsfaehig

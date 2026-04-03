@@ -13,6 +13,7 @@ let weatherMap = null;
 let recoveryConflicts = null;
 let recoveryHistory = null;
 let weatherRegions = null;
+let matrixHealth = null;
 let npcs = null;
 let npcMenu = null;
 let brewingCatalog = null;
@@ -177,6 +178,48 @@ async function fetchJson(path, options = undefined) {
     throw new Error(payload.message || `${response.status} ${response.statusText}`);
   }
   return payload;
+}
+
+// Holt additive Diagnosepfade weich nach und faellt bei aelteren Servern oder temporaeren Luecken auf einen lesbaren Platzhalter zurueck.
+async function fetchOptionalJson(path, options = undefined) {
+  const separator = path.includes("?") ? "&" : "?";
+  try {
+    const response = await fetch(`${API_BASE}${path}${separator}lang=${currentLang}`, {
+      credentials: "same-origin",
+      ...(options || {}),
+    });
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (_) {
+      payload = null;
+    }
+    if (!response.ok) {
+      return {
+        ok: false,
+        available: false,
+        status_code: response.status,
+        message: payload?.message || `${response.status} ${response.statusText}`,
+        path,
+      };
+    }
+    if (payload && typeof payload === "object") return payload;
+    return {
+      ok: false,
+      available: false,
+      status_code: response.status,
+      message: "Keine JSON-Antwort erhalten.",
+      path,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      available: false,
+      status_code: 0,
+      message: error?.message || "Gateway-Verbindung fehlgeschlagen.",
+      path,
+    };
+  }
 }
 
 function el(tag, cls, text) {
@@ -791,6 +834,91 @@ function renderRecovery(panel, conflicts, history) {
   }
 }
 
+function renderMatrixHealth(panel, matrix) {
+  panel.innerHTML = "";
+  panel.append(el("h2", "", "Servermatrix"));
+  if (!matrix) {
+    panel.append(el("p", "small", "Noch keine Matrix-Diagnostik geladen."));
+    return;
+  }
+  if (matrix.available === false) {
+    panel.append(el("p", "small feedback-warn", `Matrix-Diagnostik momentan nicht verfuegbar: ${matrix.message || "Endpunkt fehlt oder Backend ist nicht erreichbar."}`));
+    panel.append(el("p", "small", "WWW laeuft weiter ueber denselben Gateway-/Recovery-Pfad, zeigt aber keine Peer-Matrix-Details an."));
+    return;
+  }
+
+  const health = matrix.health || {};
+  const local = matrix.local || {};
+  const chosen = matrix.chosen || {};
+  const conflicts = Array.isArray(matrix.conflicts) ? matrix.conflicts : [];
+  const mergeConflicts = Array.isArray(matrix.last_merge_conflicts) ? matrix.last_merge_conflicts : [];
+  const healthTone = health.status === "healthy"
+    ? "feedback-success"
+    : (health.status === "disabled" || health.status === "degraded" || health.status === "isolated" || health.status === "syncing-needed"
+      ? "feedback-warn"
+      : "");
+
+  panel.append(el("p", healthTone ? `small ${healthTone}` : "small", `Status: ${health.status || "unbekannt"} · Grund: ${health.reason || "—"}`));
+
+  const metrics = el("div", "stack");
+  metrics.append(el("p", "small", `Lokal: ${local.server_id || "—"} · Tick ${local.latest_tick ?? 0} · Grund ${local.reason || "—"}`));
+  metrics.append(el("p", "small", `Bevorzugt: ${chosen.source || "local"} · ${chosen.server_id || "—"} · Tick ${chosen.latest_tick ?? 0}`));
+  metrics.append(el("p", "small", `Peers: frisch ${health.fresh_peer_count ?? 0} · stale ${health.stale_peer_count ?? 0} · Merge-Konflikte ${health.merge_conflict_count ?? 0}`));
+  metrics.append(el("p", "small", `Letzter Sync: ${health.last_sync_result || "idle"} · Quelle ${health.last_sync_source || "—"} · Tick ${health.last_sync_tick ?? 0}`));
+  panel.append(metrics);
+
+  if (conflicts.length) {
+    const list = el("div", "stack");
+    list.append(el("h3", "", "Peer-Lage"));
+    conflicts.slice(0, 8).forEach((entry) => {
+      const marker = [
+        entry.preferred ? "bevorzugt" : "",
+        entry.fresh ? "frisch" : "stale",
+        entry.reason || "",
+      ].filter(Boolean).join(" · ");
+      list.append(
+        el(
+          "p",
+          "small",
+          `${entry.server_id || entry.source || "peer"} · ${entry.relation || "equal"} · Tick ${entry.latest_tick ?? 0} · Δ ${entry.tick_diff ?? "—"}${marker ? ` · ${marker}` : ""}`,
+        ),
+      );
+    });
+    panel.append(list);
+  }
+
+  if (mergeConflicts.length) {
+    const mergeList = el("div", "stack");
+    mergeList.append(el("h3", "", "Letzte Merge-Konflikte"));
+    mergeConflicts.slice(0, 6).forEach((entry) => {
+      if (entry.scope === "character") {
+        mergeList.append(
+          el(
+            "p",
+            "small",
+            `${entry.player_account_id || "account"} · ${entry.character_name || entry.character_id || "character"} · Gewinner ${entry.winner || "—"} · Tick ${entry.preferred_tick ?? "—"}/${entry.fallback_tick ?? "—"}`,
+          ),
+        );
+        return;
+      }
+      if (entry.scope === "active-character") {
+        mergeList.append(
+          el(
+            "p",
+            "small",
+            `${entry.player_account_id || "account"} · aktiver Charakter divergiert · Gewinner ${entry.winner || "—"} · ${entry.preferred_character_id || "—"} vs ${entry.fallback_character_id || "—"}`,
+          ),
+        );
+        return;
+      }
+      mergeList.append(el("p", "small", JSON.stringify(entry)));
+    });
+    panel.append(mergeList);
+  } else {
+    panel.append(el("p", "small", "Keine letzten Matrix-Merge-Konflikte bekannt."));
+  }
+}
+
 function renderWeatherMap(panel, weatherMap, regions) {
   panel.innerHTML = "";
   panel.append(el("h2", "", "Wetterkarte"));
@@ -861,7 +989,14 @@ function updateCommandComposerState() {
   runButton.title = blocked ? "Beobachter duerfen diesen Befehl erst nach explizitem Takeover senden." : "";
 }
 
-function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, recoveryHistory = null, weatherRegions = null) {
+function renderSnapshot(
+  snapshot,
+  weatherMap = null,
+  recoveryConflicts = null,
+  recoveryHistory = null,
+  weatherRegions = null,
+  matrixHealthState = null,
+) {
   latestSnapshot = snapshot;
   rememberLiveCursor(snapshot);
   syncTopbarMeta(snapshot.status);
@@ -877,6 +1012,7 @@ function renderSnapshot(snapshot, weatherMap = null, recoveryConflicts = null, r
   renderCommands(document.getElementById("command-panel"), snapshot.commands, snapshot.command_details || [], snapshot.status);
   renderAssets(document.getElementById("asset-panel"), snapshot.status, snapshot.inventory, snapshot.combat, snapshot.city, snapshot.map_tiles);
   renderWeatherMap(document.getElementById('weather-panel'), weatherMap, weatherRegions);
+  renderMatrixHealth(document.getElementById('matrix-panel'), matrixHealthState);
   renderRecovery(document.getElementById('recovery-panel'), recoveryConflicts, recoveryHistory);
   renderNPCs(document.getElementById('npc-panel'), npcs, npcMenu);
   renderBrewing(document.getElementById('brew-panel'), brewingCatalog);
@@ -900,11 +1036,23 @@ function persistSnapshotIdentity(snapshot) {
 
 // Laedt die querliegenden WWW-Panels nur bei Bedarf nach, waehrend der Kernzustand bereits per Live-Snapshot kommt.
 async function refreshAuxiliaryState() {
-  const [freshWeatherMap, freshRecovery, freshHistory, freshRegions, freshNpcs, freshBrewing, freshEnchanting, freshWeave, freshRoster] = await Promise.all([
+  const [
+    freshWeatherMap,
+    freshRecovery,
+    freshHistory,
+    freshRegions,
+    freshMatrixHealth,
+    freshNpcs,
+    freshBrewing,
+    freshEnchanting,
+    freshWeave,
+    freshRoster,
+  ] = await Promise.all([
     fetchJson('/api/weather/map?radius=6'),
     fetchJson('/api/recovery/conflicts'),
     fetchJson('/api/recovery/history'),
     fetchJson('/api/weather/regions'),
+    fetchOptionalJson('/api/matrix/health'),
     fetchJson('/api/npcs'),
     fetchJson('/api/brewing/catalog'),
     fetchJson('/api/enchanting/catalog'),
@@ -915,6 +1063,7 @@ async function refreshAuxiliaryState() {
   recoveryConflicts = freshRecovery;
   recoveryHistory = freshHistory;
   weatherRegions = freshRegions;
+  matrixHealth = freshMatrixHealth;
   npcs = freshNpcs;
   brewingCatalog = freshBrewing;
   enchantingCatalog = freshEnchanting;
@@ -929,7 +1078,7 @@ async function refreshAuxiliaryState() {
 function applySnapshot(snapshot, messageOverride = null, feedbackTone = "") {
   persistSnapshotIdentity(snapshot);
   if (messageOverride) snapshot.message = messageOverride;
-  renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
+  renderSnapshot(snapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions, matrixHealth);
   if (messageOverride && feedbackTone) setRosterFeedback(messageOverride, feedbackTone);
 }
 
@@ -941,7 +1090,7 @@ function scheduleAuxiliaryRefresh() {
     try {
       await ensureSession();
       await refreshAuxiliaryState();
-      if (latestSnapshot) renderSnapshot(latestSnapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions);
+      if (latestSnapshot) renderSnapshot(latestSnapshot, weatherMap, recoveryConflicts, recoveryHistory, weatherRegions, matrixHealth);
     } catch (error) {
       setLiveConnectionState("fallback");
       renderGatewayError(`Zusatzansichten konnten nicht aktualisiert werden: ${error.message}`);

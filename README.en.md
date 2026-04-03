@@ -54,6 +54,12 @@ It also serves `/asset/*` same-origin, preferring the GitHub-backed
 `ShellRPG-cdn` path and then dynv6 and local workspace fallbacks.
 Relative config, secret, and asset-origin paths are resolved against the WWW
 endpoint or the loaded config file.
+- the browser now also consumes the explicit matrix diagnostics contract
+  `GET /api/matrix/health` to render a same-origin `Server Matrix` panel for
+  WWW/gateway diagnostics
+- if an older server does not know that endpoint yet, or temporarily fails to
+  deliver it, `ShellRPG-www` falls back to a readable notice and keeps the
+  rest of the UI working
 
 `ShellRPG-www` remains a Python gateway, not a TYPO3/TypoScript CMS endpoint.
 If a future CMS is ever needed, it should be planned separately; only then

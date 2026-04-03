@@ -55,6 +55,12 @@ bevorzugt dabei den GitHub-backed `ShellRPG-cdn`-Pfad, danach dynv6- und
 lokale Workspace-Fallbacks.
 - relative Config-, Secret- und Asset-Origin-Pfade werden stabil relativ zum
   WWW-Endpunkt bzw. zur geladenen Config aufgeloest
+- der Browser nutzt jetzt zusaetzlich den expliziten Matrix-/Diagnosevertrag
+  `GET /api/matrix/health`, um einen same-origin `Servermatrix`-Panelpfad
+  fuer WWW-/Gateway-Diagnostik aufzubauen
+- falls ein aelterer Server den Endpunkt noch nicht kennt oder temporaer
+  nicht liefert, faellt `ShellRPG-www` ruhig auf einen lesbaren Hinweis
+  zurueck und haelt die restliche UI weiter funktionsfaehig
 
 `ShellRPG-www` bleibt bewusst ein Python-Gateway und kein TYPO3-/TypoScript-
 CMS-Endpunkt. Falls spaeter ein CMS noetig wird, sollte es getrennt vom

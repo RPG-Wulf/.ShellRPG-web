@@ -22,6 +22,12 @@ Deutsch | [English](README.en.md)
 
 **Governance:** `CLIENT-PUBLIC`
 
+## Pflegehinweis
+
+- Bei relevanten Content-, Contract-, Feature- oder Redaktionsänderungen an
+  diesem Endpunkt `README.md`, `README.en.md` und `VERSION` gemeinsam
+  aktualisieren.
+
 ## 2. Abhängigkeiten
 
 - Python 3.11+
@@ -62,7 +68,31 @@ lokale Workspace-Fallbacks.
   verdichtet pro Figur an, inklusive Merge-Gruppen wie Wissensstand,
   Fortschritt und Inventar
 - pro Character-Konflikt gibt es dort jetzt einen aufklappbaren Drilldown mit
-  Feldlisten sowie kurzen Vergleichs- und Importhinweisen je Konflikt
+  echten Feldvergleichen fuer bevorzugten Stand, Gegenseite und gemergtes
+  Ergebnis sowie kurzen Vergleichs- und Importhinweisen je Konflikt
+- grosse Inventar-/Wissensmerges zeigen dabei jetzt zusaetzlich Delta-
+  Badges und serverseitig vorbereitete Kurz-Diffs gegen den Gewinnerstand,
+  damit relevante Aenderungen schneller lesbar bleiben
+- fuer sehr grosse Merges nutzt der Drilldown jetzt serverseitig gewichtete
+  `priority_preview`-Eintraege und trennt dabei visuell zwischen `Plus`-
+  und `Upgrade`-Hinweisen; diese Priorisierung beruecksichtigt jetzt zudem
+  Domänengewichtung fuer wichtigere POIs, wertigere Ressourcen und
+  kritischere Fortschrittsflags
+- dieselben priorisierten Eintraege tragen jetzt auch einen kurzen
+  `reason`; der Drilldown zeigt damit nicht nur, was oben steht, sondern
+  direkt warum es bevorzugt wurde
+- derselbe Vertrag liefert jetzt ausserdem einen stabilen `reason_code`; das
+  WWW nutzt ihn fuer kompakte Kategorien wie `Kritisch`, `Selten` oder
+  `Strategie`, ohne Freitext raten zu muessen
+- derselbe Panelpfad zeigt jetzt ausserdem Hotspots fuer auffaellige
+  Charaktere, Gruppen und Peers, traegt konfliktstabile `conflict_id`-/
+  `field_conflict_id`-Anker, zeigt kleine Konflikthistorien mit
+  `seen_count`/`still_open` und bietet Filter fuer Schweregrad,
+  Priorisierungsgruppe sowie Sortiermodi wie `Kritisch zuerst`, `Neueste
+  zuerst` und `Meiste Merges zuerst`
+- bei abgeschnittenen Kurz-Diffs zeigt der Drilldown jetzt
+  truncation-aware Rollups wie verdeckte Reason-Code- und Severity-Summen,
+  damit auch grosse Merge-Faelle lesbar bleiben
 - falls ein aelterer Server den Endpunkt noch nicht kennt oder temporaer
   nicht liefert, faellt `ShellRPG-www` ruhig auf einen lesbaren Hinweis
   zurueck und haelt die restliche UI weiter funktionsfaehig
@@ -88,6 +118,65 @@ Aktuelle Kanonvorbereitung:
   `urban_diagnosis_line` aus dem persistierten urbanen Verdachtspool; WWW-
   Tooltips, Fokusbereich und Stadtansicht bleiben dabei an denselben
   serverseitigen Subject-/Hint-/Relations-Refs gebunden
+- dieselbe Stadtansicht zeigt jetzt ausserdem `Entwicklungsstufe:` und
+  `Schutz-/Besatzungslage:` direkt als eigene Zeilen, statt diese Hinweise
+  nur indirekt in Sammellisten zu verstecken
+- dieselbe Stadtansicht spiegelt jetzt auch dynamische serverseitige
+  Protektoratsabgaben, Besatzungsdruck und Autonomie-Rueckgewinnung, ohne
+  browserseitig eigene Kriegs- oder Besatzungslogik zu rechnen
+- dieselbe WWW-Stadtansicht rendert jetzt auch `Stadtfeldgrenzen:` aus dem
+  serverseitigen Entwicklungsstufenprofil; fruehe Zivilisationsstufen
+  duerfen damit Diagnose-, Hinweis- oder Diplomatiefelder redigiert knapper
+  zeigen, statt sie im Browser immer vorauszusetzen
+- dasselbe NPC-Interaktionsmenue zeigt jetzt ausserdem eine redigierte
+  `Dialoggrenze:` und konsumiert stage-abhaengig verknappte Dienste,
+  Questschritte und Fraktionsdeutungen direkt aus dem Serververtrag
+- dieselben Stadt- und NPC-Ansichten zeigen jetzt ausserdem
+  `Stadttraeger:`, `Materialbasis:` und `Ruestkammer:` direkt aus dem
+  Serververtrag
+- `Neutrale Kommunen` koennen dadurch im Browser jetzt auch als explizite
+  multiethnische Stadttraeger erscheinen, ohne dass das WWW eigene
+  Governance- oder Fraktionslogik rechnen muss
+- Craftables im NPC-Menue folgen damit jetzt derselben serverseitigen
+  Material-/Rezeptbasis statt blossen Platzhalterlisten
+- dieselbe NPC-Ansicht zeigt jetzt ausserdem serverseitige
+  `Wirtschaftsprofil:`-, `Handelsfokus:`-, `Servicefokus:`- und
+  `Werkfokus:`-Linien sowie `Rollen-Craftables:` fuer dynamische
+  Trader-/Mechanic-Profile
+- `npc buy ...` und `npc service ...` koennen damit im Browser nicht mehr
+  nur Legacy-Rollen konsumieren, sondern auch berufsgetriebene
+  Trader-/Werkstattpfade, die aus derselben Carrier-/Materialbasis
+  abgeleitet werden
+- dieselbe WWW-NPC-Ansicht liest jetzt ausserdem `Angebotsrotation:` und
+  `Handelsdynamik:` sowie sichtbare Preisaufschlaege oder Nachlaesse pro
+  Ware aus dem Serververtrag, sodass Rollentraeger, Stadtstock und
+  Fraktionsspezialitaeten nicht mehr als starre Warenliste erscheinen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem
+  `Regionale Knappheit:`, `Bauprofil:` und `Spezialressourcen:` direkt aus
+  dem Serververtrag, sodass regionale Handelsknappheit und
+  Fraktions-Bauprofile nicht browserseitig rekonstruiert werden muessen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem
+  `Regionale Ader:` und `Splitterdruck:` direkt aus dem Serververtrag,
+  sodass regionale Spezialfunde und erste kontrollierte Splitterware nicht
+  browserseitig geraten werden muessen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem `Nachfrage:`,
+  `Lagerdruck:` und `Karawanenfluss:` direkt aus dem Serververtrag, sodass
+  Stadtlager, Umschlag und Fernbedarf ebenfalls nicht browserseitig
+  nachgebaut werden muessen
+- dieselbe WWW-Stadtansicht liest jetzt ausserdem
+  `Baustellenkapazitaet:` und einen eigenen `Baustellen`-Block aus dem
+  Serververtrag, sodass parallele Bauauftraege und ihr Tick-Fortschritt
+  sichtbar bleiben
+- das Marktpanel bleibt beim selben Serververtrag: Preisgruende koennen nun
+  Wetterdruck plus regionale Knappheit zusammen erklaeren, waehrend
+  Spezialwaren wie `Infernit`, `Magnetitlinse` oder
+  `Moorbernstein-Amulett` sichtbar in dieselbe Marktlogik fallen
+- dieselben Markt- und NPC-Ansichten duerfen jetzt auch oeffentliche
+  `Handelsstrom`- und `Karawanenumschlag`-Preisgruende zeigen, wenn
+  Stadtlager oder Fernware denselben Servermarkt sichtbar verschieben
+- dieselbe Markt- und NPC-Ansicht darf jetzt auch zusaetzliche Splitterware
+  wie `Rubin-`, `Obsidian-`, `Smaragd-`, `Opal-` oder `Zirkon-Splitter`
+  aus derselben serverseitigen Regional- und Carrierlogik lesen
 
 ## 4. Feedback & Contribution
 

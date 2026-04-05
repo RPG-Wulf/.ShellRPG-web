@@ -14,6 +14,12 @@ let recoveryConflicts = null;
 let recoveryHistory = null;
 let weatherRegions = null;
 let matrixHealth = null;
+const matrixConflictUiState = {
+  severity: "all",
+  reasonCode: "all",
+  onlyMerged: false,
+  sortMode: "severity",
+};
 let npcs = null;
 let npcMenu = null;
 let brewingCatalog = null;
@@ -583,7 +589,25 @@ function renderCity(panel, city) {
   if (city.weather_pressure_line) panel.append(el("p", "small", city.weather_pressure_line));
   if (city.urban_suspicion_line) panel.append(el("p", "small", city.urban_suspicion_line));
   if (city.urban_diagnosis_line) panel.append(el("p", "small", city.urban_diagnosis_line));
+  if (city.civilization_stage_line) panel.append(el("p", "small", `Entwicklungsstufe: ${city.civilization_stage_line}`));
+  if (city.city_carrier_line) panel.append(el("p", "small", city.city_carrier_line));
+  if (city.city_field_policy_line) panel.append(el("p", "small", `Stadtfeldgrenzen: ${city.city_field_policy_line}`));
+  if (city.regional_scarcity_line) panel.append(el("p", "small", city.regional_scarcity_line));
+  if (city.regional_yield_line) panel.append(el("p", "small", city.regional_yield_line));
+  if (city.splitter_pressure_line) panel.append(el("p", "small", city.splitter_pressure_line));
+  if (city.trade_demand_line) panel.append(el("p", "small", city.trade_demand_line));
+  if (city.city_storage_line) panel.append(el("p", "small", city.city_storage_line));
+  if (city.caravan_flow_line) panel.append(el("p", "small", city.caravan_flow_line));
+  if (city.build_profile_line) panel.append(el("p", "small", city.build_profile_line));
+  if (city.special_resource_line) panel.append(el("p", "small", city.special_resource_line));
+  if (city.material_basis_line) panel.append(el("p", "small", city.material_basis_line));
+  if (city.armory_basis_line) panel.append(el("p", "small", city.armory_basis_line));
+  if (city.protectorate_line) panel.append(el("p", "small", `Schutz-/Besatzungslage: ${city.protectorate_line}`));
+  const constructionLines = city.construction_lines?.length
+    ? city.construction_lines
+    : (city.construction_capacity_line ? [city.construction_capacity_line] : []);
   const blocks = [
+    ["Baustellen", constructionLines],
     ["Bauwerke", city.building_lines],
     ["Miliz", city.militia_lines],
     ["Generäle", city.general_lines],
@@ -650,6 +674,8 @@ function renderNPCs(panel, npcs, npcMenu) {
       controls.append(btn);
     });
     box.append(controls);
+    if (npcMenu.civilization_stage_line) box.append(el("p", "small", npcMenu.civilization_stage_line));
+    if (npcMenu.dialogue_line) box.append(el("p", "small", `Dialoggrenze: ${npcMenu.dialogue_line}`));
     if (npcMenu.opinion !== undefined) box.append(el("p", "small", `Meinung: ${npcMenu.opinion}`));
     if (npcMenu.faction_theory) box.append(el("p", "small", `Kataklysmus-Deutung: ${npcMenu.faction_theory}`));
     if (npcMenu.services_detailed?.length) {
@@ -671,7 +697,11 @@ function renderNPCs(panel, npcs, npcMenu) {
       wares.append(el("h4", "", "Waren"));
       npcMenu.wares_detailed.forEach((entry) => {
         const row = el("div", "controls-row");
-        row.append(el("span", "small", `${entry.label} · ${entry.price_silver}s`));
+        const marketAdjustment = Number(entry.market_adjustment_pct || 0);
+        const marketSuffix = marketAdjustment
+          ? ` · ${marketAdjustment > 0 ? "+" : ""}${marketAdjustment}% ${currentLang === "de" ? "Markt" : "market"}`
+          : "";
+        row.append(el("span", "small", `${entry.label} · ${entry.price_silver}s${marketSuffix}`));
         const btn = el("button", "small-button", "Kaufen");
         btn.type = "button";
         btn.addEventListener("click", () => sendCommand(`npc buy ${npcMenu.npc.name} ${entry.item_id}`));
@@ -693,6 +723,24 @@ function renderNPCs(panel, npcs, npcMenu) {
       box.append(q);
     }
     if (npcMenu.faction_resources?.length) box.append(el("p", "small", `Fraktionsressourcen: ${npcMenu.faction_resources.join(', ')}`));
+    if (npcMenu.city_carrier_line) box.append(el("p", "small", npcMenu.city_carrier_line));
+    if (npcMenu.economy_profile_line) box.append(el("p", "small", npcMenu.economy_profile_line));
+    if (npcMenu.regional_scarcity_line) box.append(el("p", "small", npcMenu.regional_scarcity_line));
+    if (npcMenu.regional_yield_line) box.append(el("p", "small", npcMenu.regional_yield_line));
+    if (npcMenu.splitter_pressure_line) box.append(el("p", "small", npcMenu.splitter_pressure_line));
+    if (npcMenu.trade_demand_line) box.append(el("p", "small", npcMenu.trade_demand_line));
+    if (npcMenu.city_storage_line) box.append(el("p", "small", npcMenu.city_storage_line));
+    if (npcMenu.caravan_flow_line) box.append(el("p", "small", npcMenu.caravan_flow_line));
+    if (npcMenu.build_profile_line) box.append(el("p", "small", npcMenu.build_profile_line));
+    if (npcMenu.special_resource_line) box.append(el("p", "small", npcMenu.special_resource_line));
+    if (npcMenu.trade_cycle_line) box.append(el("p", "small", npcMenu.trade_cycle_line));
+    if (npcMenu.market_pressure_line) box.append(el("p", "small", npcMenu.market_pressure_line));
+    if (npcMenu.trade_focus_line) box.append(el("p", "small", npcMenu.trade_focus_line));
+    if (npcMenu.service_focus_line) box.append(el("p", "small", npcMenu.service_focus_line));
+    if (npcMenu.material_basis_preview?.length) box.append(el("p", "small", `Materialbasis: ${npcMenu.material_basis_preview.join(', ')}`));
+    if (npcMenu.armory_basis_preview?.length) box.append(el("p", "small", `Rüstkammer: ${npcMenu.armory_basis_preview.join(', ')}`));
+    if (npcMenu.craft_focus_line) box.append(el("p", "small", npcMenu.craft_focus_line));
+    if (npcMenu.economy_craftables_preview?.length) box.append(el("p", "small", `Rollen-Craftables: ${npcMenu.economy_craftables_preview.join(', ')}`));
     if (npcMenu.faction_craftables_preview?.length) box.append(el("p", "small", `Craftables: ${npcMenu.faction_craftables_preview.join(', ')}`));
     panel.append(box);
   }
@@ -860,6 +908,119 @@ function matrixConflictFieldLabel(field) {
   return labels[field] || prettySlotLabel(field);
 }
 
+function normalizeMatrixFieldComparisonSnapshot(rawSnapshot) {
+  const snapshot = rawSnapshot && typeof rawSnapshot === "object" ? rawSnapshot : {};
+  const preview = Array.isArray(snapshot.preview)
+    ? snapshot.preview.map((value) => String(value || ""))
+    : [];
+  const resourceCounts = {};
+  const rawResourceCounts = snapshot.resource_counts && typeof snapshot.resource_counts === "object"
+    ? snapshot.resource_counts
+    : {};
+  Object.entries(rawResourceCounts).forEach(([key, rawValue]) => {
+    const normalizedKey = String(key || "").trim();
+    const value = Number(rawValue);
+    if (!normalizedKey || !Number.isFinite(value)) return;
+    resourceCounts[normalizedKey] = value;
+  });
+  const count = Number(snapshot.count);
+  return {
+    kind: String(snapshot.kind || "").trim(),
+    count: Number.isFinite(count) ? count : preview.length,
+    preview,
+    truncated: Boolean(snapshot.truncated),
+    resource_counts: resourceCounts,
+  };
+}
+
+function normalizeMatrixCountMap(rawMap) {
+  const normalized = {};
+  const source = rawMap && typeof rawMap === "object" ? rawMap : {};
+  Object.entries(source).forEach(([key, rawValue]) => {
+    const normalizedKey = String(key || "").trim();
+    const value = Number(rawValue);
+    if (!normalizedKey || !Number.isFinite(value) || value <= 0) return;
+    normalized[normalizedKey] = value;
+  });
+  return normalized;
+}
+
+function normalizeMatrixFieldComparisons(entry) {
+  const rawComparisons = Array.isArray(entry?.field_comparisons) ? entry.field_comparisons : [];
+  return rawComparisons
+    .map((rawEntry) => {
+      const comparison = rawEntry && typeof rawEntry === "object" ? rawEntry : {};
+      const field = String(comparison.field || "").trim();
+      if (!field) return null;
+      const rawDeltaSummary = comparison.delta_summary && typeof comparison.delta_summary === "object"
+        ? comparison.delta_summary
+        : {};
+      const addedPreview = Array.isArray(rawDeltaSummary.added_preview)
+        ? rawDeltaSummary.added_preview.map((value) => String(value || ""))
+        : [];
+      const changedPreview = Array.isArray(rawDeltaSummary.changed_preview)
+        ? rawDeltaSummary.changed_preview.map((value) => String(value || ""))
+        : [];
+      const priorityPreview = Array.isArray(rawDeltaSummary.priority_preview)
+        ? rawDeltaSummary.priority_preview
+            .map((rawPriority) => {
+              const entry = rawPriority && typeof rawPriority === "object" ? rawPriority : {};
+              const label = String(entry.label || "").trim();
+              const reason = String(entry.reason || "").trim();
+              const reasonCode = String(entry.reason_code || "").trim();
+              const weight = Number(entry.weight);
+              if (!label) return null;
+              return {
+                delta_kind: String(entry.delta_kind || "").trim() === "upgrade" ? "upgrade" : "plus",
+                label,
+                reason,
+                reason_code: reasonCode,
+                severity: String(entry.severity || "").trim(),
+                tier: Number(entry.tier ?? 0),
+                weight: Number.isFinite(weight) ? weight : 0,
+              };
+            })
+            .filter(Boolean)
+        : [];
+      return {
+        field,
+        group: String(comparison.group || "").trim() || matrixConflictGroupForField(field),
+        winner_side: String(comparison.winner_side || "").trim() || "preferred",
+        merge_mode: String(comparison.merge_mode || "").trim() || "winner",
+        preferred: normalizeMatrixFieldComparisonSnapshot(comparison.preferred),
+        fallback: normalizeMatrixFieldComparisonSnapshot(comparison.fallback),
+        merged: normalizeMatrixFieldComparisonSnapshot(comparison.merged),
+        delta_summary: {
+          winner_side: String(rawDeltaSummary.winner_side || comparison.winner_side || "").trim() || "preferred",
+          kind: String(rawDeltaSummary.kind || "").trim() || "unknown",
+          delta_count: Number(rawDeltaSummary.delta_count ?? (addedPreview.length + changedPreview.length)),
+          added_count: Number(rawDeltaSummary.added_count ?? addedPreview.length),
+          added_preview: addedPreview,
+          changed_count: Number(rawDeltaSummary.changed_count ?? changedPreview.length),
+          changed_preview: changedPreview,
+          priority_preview: priorityPreview,
+          priority_overflow_count: Number(rawDeltaSummary.priority_overflow_count ?? 0),
+          hidden_priority_reason_code_counts: normalizeMatrixCountMap(rawDeltaSummary.hidden_priority_reason_code_counts),
+          hidden_priority_severity_counts: normalizeMatrixCountMap(rawDeltaSummary.hidden_priority_severity_counts),
+          severity_counts: normalizeMatrixCountMap(rawDeltaSummary.severity_counts),
+          reason_code_counts: normalizeMatrixCountMap(rawDeltaSummary.reason_code_counts),
+          max_severity: String(rawDeltaSummary.max_severity || "").trim() || "",
+          max_tier: Number(rawDeltaSummary.max_tier ?? 0),
+          priority_count: Number(rawDeltaSummary.priority_count ?? priorityPreview.length),
+          truncated: Boolean(rawDeltaSummary.truncated),
+        },
+        merged_differs_from_preferred: Boolean(comparison.merged_differs_from_preferred),
+        merged_differs_from_fallback: Boolean(comparison.merged_differs_from_fallback),
+        field_conflict_id: String(comparison.field_conflict_id || "").trim(),
+        max_severity: String(comparison.max_severity || rawDeltaSummary.max_severity || "").trim() || "",
+        max_tier: Number(comparison.max_tier ?? rawDeltaSummary.max_tier ?? 0),
+        severity_counts: normalizeMatrixCountMap(comparison.severity_counts),
+        reason_code_counts: normalizeMatrixCountMap(comparison.reason_code_counts),
+      };
+    })
+    .filter(Boolean);
+}
+
 function normalizeMatrixCharacterConflicts(matrix, mergeConflicts) {
   const explicit = Array.isArray(matrix.character_conflicts) ? matrix.character_conflicts : [];
   const fallback = explicit.length
@@ -868,6 +1029,7 @@ function normalizeMatrixCharacterConflicts(matrix, mergeConflicts) {
 
   return fallback.map((rawEntry) => {
     const entry = rawEntry || {};
+    const fieldComparisons = normalizeMatrixFieldComparisons(entry);
     const seenFields = new Set();
     const mergedPlayerFields = (Array.isArray(entry.merged_player_fields) ? entry.merged_player_fields : [])
       .map((field) => String(field || "").trim())
@@ -900,18 +1062,81 @@ function normalizeMatrixCharacterConflicts(matrix, mergeConflicts) {
         };
       });
 
+    const history = entry.history && typeof entry.history === "object" ? entry.history : {};
+
     return {
+      conflict_id: String(entry.conflict_id || "").trim(),
       player_account_id: entry.player_account_id || "",
       character_id: entry.character_id || "",
       character_name: entry.character_name || "",
       winner: entry.winner || "",
       preferred_tick: entry.preferred_tick ?? 0,
       fallback_tick: entry.fallback_tick ?? 0,
+      preferred_updated_at_ts: Number(entry.preferred_updated_at_ts ?? 0),
+      fallback_updated_at_ts: Number(entry.fallback_updated_at_ts ?? 0),
+      latest_tick: Number(entry.latest_tick ?? Math.max(Number(entry.preferred_tick ?? 0), Number(entry.fallback_tick ?? 0))),
+      latest_updated_at_ts: Number(
+        entry.latest_updated_at_ts
+          ?? Math.max(Number(entry.preferred_updated_at_ts ?? 0), Number(entry.fallback_updated_at_ts ?? 0)),
+      ),
+      same_tick: Boolean(entry.same_tick),
+      reason: String(entry.reason || "").trim(),
       merged_player_fields: mergedPlayerFields,
       merged_player_field_count: entry.merged_player_field_count ?? mergedPlayerFields.length,
       merged_field_groups: mergedFieldGroups,
+      field_comparison_count: Number(entry.field_comparison_count ?? fieldComparisons.length),
+      field_comparisons: fieldComparisons,
+      severity_counts: normalizeMatrixCountMap(entry.severity_counts),
+      reason_code_counts: normalizeMatrixCountMap(entry.reason_code_counts),
+      hidden_priority_reason_code_counts: normalizeMatrixCountMap(entry.hidden_priority_reason_code_counts),
+      max_severity: String(entry.max_severity || "").trim() || "",
+      max_tier: Number(entry.max_tier ?? 0),
+      history: {
+        first_seen_ts: Number(history.first_seen_ts ?? 0),
+        last_seen_ts: Number(history.last_seen_ts ?? 0),
+        closed_at_ts: Number(history.closed_at_ts ?? 0),
+        seen_count: Number(history.seen_count ?? 0),
+        still_open: Boolean(history.still_open),
+        last_max_severity: String(history.last_max_severity || "").trim() || "",
+        last_latest_tick: Number(history.last_latest_tick ?? 0),
+      },
     };
   });
+}
+
+function normalizeMatrixHotspots(matrix) {
+  const hotspots = matrix?.hotspots && typeof matrix.hotspots === "object" ? matrix.hotspots : {};
+  const topCharacters = Array.isArray(hotspots.top_characters)
+    ? hotspots.top_characters.map((entry) => ({
+        conflict_id: String(entry?.conflict_id || "").trim(),
+        character_name: String(entry?.character_name || "").trim(),
+        character_id: String(entry?.character_id || "").trim(),
+        max_severity: String(entry?.max_severity || "").trim(),
+        max_tier: Number(entry?.max_tier ?? 0),
+        merged_player_field_count: Number(entry?.merged_player_field_count ?? 0),
+        latest_tick: Number(entry?.latest_tick ?? 0),
+      })).filter((entry) => entry.character_name || entry.character_id)
+    : [];
+  const reasonCodes = Array.isArray(hotspots.reason_codes)
+    ? hotspots.reason_codes.map((entry) => ({
+        reason_code: String(entry?.reason_code || "").trim(),
+        count: Number(entry?.count ?? 0),
+      })).filter((entry) => entry.reason_code && entry.count > 0)
+    : [];
+  const peers = Array.isArray(hotspots.peers)
+    ? hotspots.peers.map((entry) => ({
+        server_id: String(entry?.server_id || "").trim(),
+        relation: String(entry?.relation || "").trim() || "equal",
+        fresh: Boolean(entry?.fresh),
+        tick_diff: Number(entry?.tick_diff ?? 0),
+        reason: String(entry?.reason || "").trim(),
+      })).filter((entry) => entry.server_id)
+    : [];
+  return {
+    top_characters: topCharacters,
+    reason_codes: reasonCodes,
+    peers,
+  };
 }
 
 function matrixConflictSourceLabels(matrix) {
@@ -955,6 +1180,457 @@ function matrixConflictImportHint(entry, matrix) {
   return "Import-Hinweis: Der Matrix-Merge hat den Konflikt bereits verarbeitet; nutze den Drilldown vor allem zum Nachvollziehen der uebernommenen Feldgruppen.";
 }
 
+function matrixConflictSideLabel(side, matrix) {
+  const sourceLabels = matrixConflictSourceLabels(matrix);
+  const raw = String(sourceLabels?.[side] || side || "").trim();
+  if (side === "preferred") return `Bevorzugter Stand (${raw || "preferred"})`;
+  if (side === "fallback") return `Gegenseite (${raw || "fallback"})`;
+  return raw || side || "unbekannt";
+}
+
+function matrixConflictMergeModeLabel(mode) {
+  if (mode === "union") return "Vereinigung";
+  if (mode === "winner-plus-missing") return "Gewinner plus fehlende Werte";
+  if (mode === "dedupe-tail") return "dedupliziertes Ende";
+  if (mode === "max-per-key") return "Maximum pro Schluessel";
+  if (mode === "winner") return "Winner-only";
+  return mode || "unbekannt";
+}
+
+function matrixConflictSnapshotCountLabel(snapshot) {
+  const count = Number(snapshot?.count ?? 0);
+  if (snapshot?.kind === "coords") return `${count} Tile${count === 1 ? "" : "s"}`;
+  if (snapshot?.kind === "resource-coords") return `${count} Ressourcenposition${count === 1 ? "" : "en"}`;
+  if (snapshot?.kind === "strings") return `${count} Eintrag${count === 1 ? "" : "e"}`;
+  if (snapshot?.kind === "mapping") return `${count} Schluessel`;
+  return `${count} Wert${count === 1 ? "" : "e"}`;
+}
+
+function matrixConflictSnapshotResourceSummary(snapshot) {
+  const resourceCounts = snapshot?.resource_counts && typeof snapshot.resource_counts === "object"
+    ? snapshot.resource_counts
+    : {};
+  const entries = Object.entries(resourceCounts);
+  if (!entries.length) return "";
+  return entries
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key} ${value}`)
+    .join(" · ");
+}
+
+function matrixConflictFieldComparisonHint(comparison, matrix) {
+  const deltaSummary = comparison?.delta_summary || {};
+  if (Number(deltaSummary.delta_count || 0) > 0) {
+    return `Delta-Markierung: ${matrixConflictDeltaSummaryCompactText(comparison, deltaSummary, matrix)} wurden im Merge gegen den Gewinnerstand zusaetzlich erhalten.`;
+  }
+  if (comparison.merged_differs_from_preferred && comparison.merged_differs_from_fallback) {
+    return "Das Ergebnis weicht von beiden Einzelstaenden ab und konserviert Inhalte aus beiden Seiten.";
+  }
+  if (comparison.merged_differs_from_preferred) {
+    return "Das Ergebnis ergaenzt den fuehrenden Stand um fehlende Gegenwerte.";
+  }
+  if (comparison.merged_differs_from_fallback) {
+    return "Das Ergebnis folgt weitgehend dem fuehrenden Stand; die Gegenseite brachte hier nichts Zusaetzliches ein.";
+  }
+  return "Das Ergebnis entspricht in diesem Feld bereits dem fuehrenden Stand.";
+}
+
+function matrixConflictDeltaSummaryCompactText(comparison, deltaSummary, matrix) {
+  const winnerLabel = matrixConflictSideLabel(deltaSummary.winner_side || comparison.winner_side || "preferred", matrix);
+  const parts = [];
+  const addedCount = Number(deltaSummary.added_count || 0);
+  const changedCount = Number(deltaSummary.changed_count || 0);
+  if (addedCount > 0) parts.push(`neu ${addedCount}`);
+  if (changedCount > 0) parts.push(`aktualisiert ${changedCount}`);
+  if (!parts.length) parts.push(`Delta ${Number(deltaSummary.delta_count || 0)}`);
+  return `${parts.join(" · ")} gegen ${winnerLabel}`;
+}
+
+function matrixConflictPrioritySymbol(deltaKind) {
+  return deltaKind === "upgrade" ? "↑" : "+";
+}
+
+function matrixConflictPriorityLabel(deltaKind) {
+  return deltaKind === "upgrade" ? "Upgrade" : "Plus";
+}
+
+function matrixConflictPriorityCategoryLabel(reasonCode) {
+  const code = String(reasonCode || "").trim();
+  const labels = {
+    map_discovery: "Karte",
+    journal: "Journal",
+    inventory: "Inventar",
+    inventory_valuable: "Wertvoll",
+    inventory_upgrade: "Aufstockung",
+    resource: "Ressource",
+    resource_common: "Grund",
+    resource_core: "Kern",
+    resource_rare: "Selten",
+    resource_premium: "Premium",
+    poi: "POI",
+    poi_civic: "Zivil",
+    poi_strategic: "Strategie",
+    poi_special: "Sonder-POI",
+    poi_signature: "Signatur",
+    progress: "Fortschritt",
+    progress_routine: "Routine",
+    progress_activity: "Aktivitaet",
+    progress_social: "Sozial",
+    progress_knowledge: "Wissen",
+    progress_critical: "Kritisch",
+    progress_quest: "Quest",
+    progress_upgrade: "Upgrade",
+  };
+  return labels[code] || "";
+}
+
+function matrixConflictPriorityCategoryTone(reasonCode) {
+  const code = String(reasonCode || "").trim();
+  if (code.startsWith("progress_")) return "is-progress";
+  if (code.startsWith("resource_")) return "is-resource";
+  if (code.startsWith("poi_")) return "is-poi";
+  if (code.startsWith("inventory")) return "is-inventory";
+  if (code === "map_discovery") return "is-map";
+  if (code === "journal") return "is-journal";
+  return "";
+}
+
+function matrixConflictSeverityRank(severity) {
+  const mapping = { critical: 4, high: 3, medium: 2, low: 1 };
+  return mapping[String(severity || "").trim()] || 0;
+}
+
+function matrixConflictSeverityLabel(severity) {
+  const labels = {
+    critical: "Kritisch",
+    high: "Hoch",
+    medium: "Mittel",
+    low: "Niedrig",
+  };
+  return labels[String(severity || "").trim()] || "Unbekannt";
+}
+
+function matrixConflictSeverityTone(severity) {
+  const normalized = String(severity || "").trim();
+  return normalized ? `is-${normalized}` : "";
+}
+
+function matrixConflictReasonCodeLabel(reasonCode) {
+  const categoryLabel = matrixConflictPriorityCategoryLabel(reasonCode);
+  if (categoryLabel) return categoryLabel;
+  return prettySlotLabel(reasonCode) || "Sonstiges";
+}
+
+function renderMatrixSeverityBadge(severity, count = 0) {
+  const normalized = String(severity || "").trim();
+  if (!normalized) return null;
+  const badge = el(
+    "span",
+    `matrix-conflict-card__badge matrix-conflict-card__severity ${matrixConflictSeverityTone(normalized)}`.trim(),
+    count > 0 ? `${matrixConflictSeverityLabel(normalized)} ${count}` : matrixConflictSeverityLabel(normalized),
+  );
+  return badge;
+}
+
+function renderMatrixCountSummaryRow(title, counts, labelFn, toneFn = null) {
+  const normalized = normalizeMatrixCountMap(counts);
+  if (!Object.keys(normalized).length) return null;
+  const block = el("div", "stack");
+  block.append(el("p", "small-head", title));
+  const row = el("div", "matrix-conflict-card__badge-row");
+  Object.entries(normalized)
+    .sort((left, right) => Number(right[1]) - Number(left[1]) || String(left[0]).localeCompare(String(right[0])))
+    .forEach(([key, value]) => {
+      const tone = typeof toneFn === "function" ? toneFn(key) : "";
+      row.append(
+        el(
+          "span",
+          tone ? `matrix-conflict-card__badge ${tone}` : "matrix-conflict-card__badge",
+          `${labelFn(key)} ${value}`,
+        ),
+      );
+    });
+  block.append(row);
+  return block;
+}
+
+function formatMatrixTimestamp(rawTs) {
+  const ts = Number(rawTs);
+  if (!Number.isFinite(ts) || ts <= 0) return "—";
+  try {
+    return new Date(ts * 1000).toLocaleString("de-DE", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  } catch (_) {
+    return `ts ${Math.round(ts)}`;
+  }
+}
+
+function matrixConflictHistorySummary(entry) {
+  const history = entry?.history || {};
+  if (!Number(history.seen_count || 0)) return "Neu im aktuellen Matrix-Zyklus.";
+  const state = history.still_open ? "offen" : "geschlossen";
+  return `Historie: ${state} · gesehen ${Number(history.seen_count || 0)}x · zuerst ${formatMatrixTimestamp(history.first_seen_ts)} · zuletzt ${formatMatrixTimestamp(history.last_seen_ts)}`;
+}
+
+function matrixConflictMatchesFilters(entry) {
+  if (matrixConflictUiState.severity !== "all") {
+    const severityKey = String(matrixConflictUiState.severity || "").trim();
+    const severityCounts = normalizeMatrixCountMap(entry?.severity_counts);
+    if (!Number(severityCounts[severityKey] || 0) && String(entry?.max_severity || "").trim() !== severityKey) {
+      return false;
+    }
+  }
+  if (matrixConflictUiState.reasonCode !== "all") {
+    const reasonCode = String(matrixConflictUiState.reasonCode || "").trim();
+    const reasonCounts = normalizeMatrixCountMap(entry?.reason_code_counts);
+    if (!Number(reasonCounts[reasonCode] || 0)) {
+      return false;
+    }
+  }
+  if (matrixConflictUiState.onlyMerged && Number(entry?.merged_player_field_count || 0) <= 0) {
+    return false;
+  }
+  return true;
+}
+
+function sortMatrixCharacterConflicts(entries) {
+  const copy = [...entries];
+  const sortMode = String(matrixConflictUiState.sortMode || "").trim() || "severity";
+  copy.sort((left, right) => {
+    if (sortMode === "recent") {
+      return (
+        Number(right.latest_updated_at_ts || 0) - Number(left.latest_updated_at_ts || 0)
+        || Number(right.latest_tick || 0) - Number(left.latest_tick || 0)
+        || Number(right.max_tier || 0) - Number(left.max_tier || 0)
+        || String(left.character_name || left.character_id || "").localeCompare(String(right.character_name || right.character_id || ""))
+      );
+    }
+    if (sortMode === "merged") {
+      return (
+        Number(right.merged_player_field_count || 0) - Number(left.merged_player_field_count || 0)
+        || Number(right.field_comparison_count || 0) - Number(left.field_comparison_count || 0)
+        || Number(right.max_tier || 0) - Number(left.max_tier || 0)
+        || Number(right.latest_tick || 0) - Number(left.latest_tick || 0)
+        || String(left.character_name || left.character_id || "").localeCompare(String(right.character_name || right.character_id || ""))
+      );
+    }
+    return (
+      Number(right.max_tier || 0) - Number(left.max_tier || 0)
+      || Number(right.merged_player_field_count || 0) - Number(left.merged_player_field_count || 0)
+      || Number(right.latest_tick || 0) - Number(left.latest_tick || 0)
+      || String(left.character_name || left.character_id || "").localeCompare(String(right.character_name || right.character_id || ""))
+    );
+  });
+  return copy;
+}
+
+function filteredMatrixCharacterConflicts(entries) {
+  return sortMatrixCharacterConflicts(entries.filter((entry) => matrixConflictMatchesFilters(entry)));
+}
+
+function renderMatrixConflictPriorityPill(entry) {
+  const deltaKind = String(entry?.delta_kind || "").trim() === "upgrade" ? "upgrade" : "plus";
+  const reason = String(entry?.reason || "").trim();
+  const reasonCode = String(entry?.reason_code || "").trim();
+  const pill = el(
+    "span",
+    `matrix-conflict-card__priority-pill is-${deltaKind}`,
+    `${matrixConflictPrioritySymbol(deltaKind)} ${entry?.label || ""}`,
+  );
+  pill.title = `${matrixConflictPriorityLabel(deltaKind)} · Gewicht ${Number(entry?.weight || 0)}${reasonCode ? ` · Schluessel ${reasonCode}` : ""}${reason ? ` · Grund ${reason}` : ""}`;
+  return pill;
+}
+
+function renderMatrixConflictPriorityEntry(entry) {
+  const card = el("div", "matrix-conflict-card__priority-entry");
+  card.append(renderMatrixConflictPriorityPill(entry));
+  const reason = String(entry?.reason || "").trim();
+  const reasonCode = String(entry?.reason_code || "").trim();
+  const severity = String(entry?.severity || "").trim();
+  const categoryLabel = matrixConflictPriorityCategoryLabel(reasonCode);
+  if (categoryLabel || reason || severity) {
+    const meta = el("div", "matrix-conflict-card__priority-meta");
+    const severityBadge = renderMatrixSeverityBadge(severity);
+    if (severityBadge) meta.append(severityBadge);
+    if (categoryLabel) {
+      const tone = matrixConflictPriorityCategoryTone(reasonCode);
+      meta.append(
+        el(
+          "span",
+          tone ? `matrix-conflict-card__priority-category ${tone}` : "matrix-conflict-card__priority-category",
+          categoryLabel,
+        ),
+      );
+    }
+    if (reason) {
+      meta.append(el("span", "small matrix-conflict-card__priority-reason", `Grund: ${reason}`));
+    }
+    card.append(meta);
+  }
+  return card;
+}
+
+function renderMatrixPriorityOverflowSummary(deltaSummary) {
+  const block = el("div", "stack");
+  block.append(el("p", "small-head", "Verdeckte Rollups"));
+  const overflow = Number(deltaSummary?.priority_overflow_count || 0);
+  block.append(el("p", "small", `Weitere priorisierte Eintraege ${overflow}`));
+  const severityRow = renderMatrixCountSummaryRow(
+    "Schweregrade",
+    deltaSummary?.hidden_priority_severity_counts,
+    matrixConflictSeverityLabel,
+    matrixConflictSeverityTone,
+  );
+  if (severityRow) block.append(severityRow);
+  const reasonRow = renderMatrixCountSummaryRow(
+    "Gruppen",
+    deltaSummary?.hidden_priority_reason_code_counts,
+    matrixConflictReasonCodeLabel,
+    matrixConflictPriorityCategoryTone,
+  );
+  if (reasonRow) block.append(reasonRow);
+  return block;
+}
+
+function renderMatrixConflictDeltaList(title, values) {
+  const block = el("div", "matrix-conflict-card__delta-block");
+  block.append(el("p", "small-head", title));
+  const list = document.createElement("ul");
+  list.className = "matrix-conflict-card__snapshot-list";
+  values.forEach((value) => {
+    const item = document.createElement("li");
+    item.textContent = value;
+    list.append(item);
+  });
+  block.append(list);
+  return block;
+}
+
+function renderMatrixConflictSnapshot(label, snapshot, tone = "") {
+  const card = el("div", tone ? `matrix-conflict-card__snapshot ${tone}` : "matrix-conflict-card__snapshot");
+  card.append(el("p", "small-head", label));
+  card.append(el("p", "small", matrixConflictSnapshotCountLabel(snapshot)));
+  const resourceSummary = matrixConflictSnapshotResourceSummary(snapshot);
+  if (resourceSummary) {
+    card.append(el("p", "small", `Ressourcen: ${resourceSummary}`));
+  }
+  const preview = Array.isArray(snapshot?.preview) ? snapshot.preview : [];
+  if (preview.length) {
+    const list = document.createElement("ul");
+    list.className = "matrix-conflict-card__snapshot-list";
+    preview.forEach((value) => {
+      const item = document.createElement("li");
+      item.textContent = value;
+      list.append(item);
+    });
+    card.append(list);
+  } else {
+    card.append(el("p", "small", "kein aussagekraeftiger Preview-Eintrag"));
+  }
+  if (snapshot?.truncated) {
+    card.append(el("p", "small", "Preview gekuerzt"));
+  }
+  return card;
+}
+
+function renderMatrixFieldComparisonCard(comparison, matrix) {
+  const card = el("div", "matrix-conflict-card__group matrix-conflict-card__comparison");
+  const deltaSummary = comparison?.delta_summary || {};
+  const head = el("div", "matrix-conflict-card__comparison-head");
+  head.append(el("strong", "", matrixConflictFieldLabel(comparison.field)));
+  head.append(
+    el(
+      "p",
+      "small",
+      `${matrixConflictGroupLabel(comparison.group)} · Merge-Modus ${matrixConflictMergeModeLabel(comparison.merge_mode)}`,
+    ),
+  );
+  const badges = el("div", "matrix-conflict-card__badge-row");
+  const severityBadge = renderMatrixSeverityBadge(comparison.max_severity, 0);
+  if (severityBadge) {
+    badges.append(severityBadge);
+  }
+  if (comparison.merged_differs_from_preferred) {
+    badges.append(el("span", "matrix-conflict-card__badge", "abweichend zum Fuehrer"));
+  }
+  if (comparison.merged_differs_from_fallback) {
+    badges.append(el("span", "matrix-conflict-card__badge", "abweichend zur Gegenseite"));
+  }
+  if (Number(deltaSummary.delta_count || 0) > 0) {
+    badges.append(el("span", "matrix-conflict-card__badge is-delta", `Delta ${Number(deltaSummary.delta_count || 0)}`));
+  }
+  if (Number(deltaSummary.added_count || 0) > 0) {
+    badges.append(el("span", "matrix-conflict-card__badge is-plus", `Plus ${Number(deltaSummary.added_count || 0)}`));
+  }
+  if (Number(deltaSummary.changed_count || 0) > 0) {
+    badges.append(el("span", "matrix-conflict-card__badge is-upgrade", `Upgrade ${Number(deltaSummary.changed_count || 0)}`));
+  }
+  if (badges.childElementCount) {
+    head.append(badges);
+  }
+  card.append(head);
+  if (comparison.field_conflict_id) {
+    card.append(el("p", "small", `Feld-Konflikt-ID: ${comparison.field_conflict_id}`));
+  }
+
+  const snapshotGrid = el("div", "matrix-conflict-card__snapshot-grid");
+  snapshotGrid.append(renderMatrixConflictSnapshot(matrixConflictSideLabel("preferred", matrix), comparison.preferred));
+  snapshotGrid.append(renderMatrixConflictSnapshot(matrixConflictSideLabel("fallback", matrix), comparison.fallback));
+  snapshotGrid.append(renderMatrixConflictSnapshot("Gemergter Stand", comparison.merged, "is-merged"));
+  card.append(snapshotGrid);
+  if (Number(deltaSummary.delta_count || 0) > 0) {
+    const deltaBlock = el("div", "matrix-conflict-card__delta stack");
+    deltaBlock.append(
+      el(
+        "p",
+        "small",
+        `Kurz-Diff gegen ${matrixConflictSideLabel(deltaSummary.winner_side || comparison.winner_side || "preferred", matrix)}`,
+      ),
+    );
+    if (Array.isArray(deltaSummary.priority_preview) && deltaSummary.priority_preview.length) {
+      const priority = el("div", "stack");
+      priority.append(el("p", "small-head", "Priorisiert"));
+      const priorityRow = el("div", "matrix-conflict-card__priority-row");
+      deltaSummary.priority_preview.forEach((entry) => {
+        priorityRow.append(renderMatrixConflictPriorityEntry(entry));
+      });
+      priority.append(priorityRow);
+      if (Number(deltaSummary.priority_overflow_count || 0) > 0) {
+        priority.append(renderMatrixPriorityOverflowSummary(deltaSummary));
+      }
+      deltaBlock.append(priority);
+    }
+    if (Array.isArray(deltaSummary.added_preview) && deltaSummary.added_preview.length) {
+      deltaBlock.append(renderMatrixConflictDeltaList("Neu erhalten", deltaSummary.added_preview));
+    }
+    if (Array.isArray(deltaSummary.changed_preview) && deltaSummary.changed_preview.length) {
+      deltaBlock.append(renderMatrixConflictDeltaList("Angehoben / aktualisiert", deltaSummary.changed_preview));
+    }
+    if (deltaSummary.truncated) {
+      deltaBlock.append(el("p", "small", "Kurz-Diff gekuerzt"));
+    }
+    const severitySummary = renderMatrixCountSummaryRow(
+      "Delta-Schwere",
+      deltaSummary.severity_counts,
+      matrixConflictSeverityLabel,
+      matrixConflictSeverityTone,
+    );
+    if (severitySummary) deltaBlock.append(severitySummary);
+    const reasonSummary = renderMatrixCountSummaryRow(
+      "Delta-Gruppen",
+      deltaSummary.reason_code_counts,
+      matrixConflictReasonCodeLabel,
+      matrixConflictPriorityCategoryTone,
+    );
+    if (reasonSummary) deltaBlock.append(reasonSummary);
+    card.append(deltaBlock);
+  }
+  card.append(el("p", "small", matrixConflictFieldComparisonHint(comparison, matrix)));
+  return card;
+}
+
 function renderMatrixCharacterConflictCard(entry, matrix, index = 0) {
   const details = document.createElement("details");
   details.className = "matrix-conflict-card";
@@ -967,15 +1643,62 @@ function renderMatrixCharacterConflictCard(entry, matrix, index = 0) {
     el(
       "span",
       "small",
-      `Gewinner ${matrixConflictWinnerLabel(entry, matrix)} · Tick ${entry.preferred_tick ?? "—"}/${entry.fallback_tick ?? "—"}`,
+      `Gewinner ${matrixConflictWinnerLabel(entry, matrix)} · Tick ${entry.preferred_tick ?? "—"}/${entry.fallback_tick ?? "—"} · Letztstand ${entry.latest_tick ?? 0}`,
     ),
   );
   summary.append(el("span", "small", `${entry.player_account_id || "account"}`));
+  if (entry.max_severity) {
+    const severityBadge = renderMatrixSeverityBadge(entry.max_severity);
+    if (severityBadge) summary.append(severityBadge);
+  }
   details.append(summary);
 
   const body = el("div", "matrix-conflict-card__body stack");
   body.append(el("p", "small", matrixConflictCompareHint(entry, matrix)));
   body.append(el("p", "small", matrixConflictImportHint(entry, matrix)));
+  body.append(el("p", "small", matrixConflictHistorySummary(entry)));
+  if (entry.conflict_id) {
+    body.append(el("p", "small", `Konflikt-ID: ${entry.conflict_id}`));
+  }
+  body.append(
+    el(
+      "p",
+      "small",
+      `Letzte Aenderung ${formatMatrixTimestamp(entry.latest_updated_at_ts)} · Feldvergleiche ${Number(entry.field_comparison_count || 0)} · Feld-Merges ${Number(entry.merged_player_field_count || 0)}`,
+    ),
+  );
+  const severitySummary = renderMatrixCountSummaryRow(
+    "Schweregrad",
+    entry.severity_counts,
+    matrixConflictSeverityLabel,
+    matrixConflictSeverityTone,
+  );
+  if (severitySummary) body.append(severitySummary);
+  const reasonSummary = renderMatrixCountSummaryRow(
+    "Priorisierte Gruppen",
+    entry.reason_code_counts,
+    matrixConflictReasonCodeLabel,
+    matrixConflictPriorityCategoryTone,
+  );
+  if (reasonSummary) body.append(reasonSummary);
+  const hiddenReasonSummary = renderMatrixCountSummaryRow(
+    "Weitere verdeckte Gruppen",
+    entry.hidden_priority_reason_code_counts,
+    matrixConflictReasonCodeLabel,
+    matrixConflictPriorityCategoryTone,
+  );
+  if (hiddenReasonSummary) body.append(hiddenReasonSummary);
+
+  if (Array.isArray(entry.field_comparisons) && entry.field_comparisons.length) {
+    const comparisons = el("div", "stack");
+    comparisons.append(el("h4", "small-head", "Feldvergleich"));
+    const comparisonGrid = el("div", "matrix-conflict-card__comparison-grid");
+    entry.field_comparisons.forEach((comparison) => {
+      comparisonGrid.append(renderMatrixFieldComparisonCard(comparison, matrix));
+    });
+    comparisons.append(comparisonGrid);
+    body.append(comparisons);
+  }
 
   if (Array.isArray(entry.merged_field_groups) && entry.merged_field_groups.length) {
     const groups = el("div", "stack");
@@ -1000,12 +1723,169 @@ function renderMatrixCharacterConflictCard(entry, matrix, index = 0) {
       groups.append(card);
     });
     body.append(groups);
-  } else {
+  } else if (!entry.field_comparisons?.length) {
     body.append(el("p", "small", "Dieser Konflikt war eine reine Winner-Entscheidung ohne zusaetzliche Feldlisten."));
   }
 
   details.append(body);
   return details;
+}
+
+function renderMatrixHealthControls(matrix, characterConflicts) {
+  const controls = el("div", "matrix-health__controls");
+  controls.append(el("h3", "", "Filter & Sortierung"));
+
+  const filterRow = el("div", "matrix-health__filters");
+  const severityWrap = el("label", "matrix-health__control");
+  severityWrap.append(el("span", "small-head", "Schwere"));
+  const severitySelect = document.createElement("select");
+  severitySelect.className = "matrix-health__select";
+  [
+    ["all", "Alle"],
+    ["critical", "Kritisch"],
+    ["high", "Hoch"],
+    ["medium", "Mittel"],
+    ["low", "Niedrig"],
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    if (matrixConflictUiState.severity === value) option.selected = true;
+    severitySelect.append(option);
+  });
+  severitySelect.addEventListener("change", (event) => {
+    matrixConflictUiState.severity = String(event.target.value || "all");
+    renderMatrixHealth(document.getElementById("matrix-panel"), matrix);
+  });
+  severityWrap.append(severitySelect);
+  filterRow.append(severityWrap);
+
+  const reasonWrap = el("label", "matrix-health__control");
+  reasonWrap.append(el("span", "small-head", "Gruppe"));
+  const reasonSelect = document.createElement("select");
+  reasonSelect.className = "matrix-health__select";
+  const reasonCounts = normalizeMatrixCountMap(matrix?.conflict_summary?.priority_reason_code_counts);
+  const reasonCodes = new Set(Object.keys(reasonCounts));
+  characterConflicts.forEach((entry) => {
+    Object.keys(normalizeMatrixCountMap(entry.reason_code_counts)).forEach((reasonCode) => reasonCodes.add(reasonCode));
+  });
+  const reasonOptions = [
+    ["all", "Alle"],
+    ...Array.from(reasonCodes)
+      .sort((left, right) => Number(reasonCounts[right] || 0) - Number(reasonCounts[left] || 0) || left.localeCompare(right))
+      .map((reasonCode) => [reasonCode, matrixConflictReasonCodeLabel(reasonCode)]),
+  ];
+  reasonOptions.forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    if (matrixConflictUiState.reasonCode === value) option.selected = true;
+    reasonSelect.append(option);
+  });
+  reasonSelect.addEventListener("change", (event) => {
+    matrixConflictUiState.reasonCode = String(event.target.value || "all");
+    renderMatrixHealth(document.getElementById("matrix-panel"), matrix);
+  });
+  reasonWrap.append(reasonSelect);
+  filterRow.append(reasonWrap);
+
+  const sortWrap = el("label", "matrix-health__control");
+  sortWrap.append(el("span", "small-head", "Sortierung"));
+  const sortSelect = document.createElement("select");
+  sortSelect.className = "matrix-health__select";
+  [
+    ["severity", "Kritisch zuerst"],
+    ["recent", "Neueste zuerst"],
+    ["merged", "Meiste Merges zuerst"],
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    if (matrixConflictUiState.sortMode === value) option.selected = true;
+    sortSelect.append(option);
+  });
+  sortSelect.addEventListener("change", (event) => {
+    matrixConflictUiState.sortMode = String(event.target.value || "severity");
+    renderMatrixHealth(document.getElementById("matrix-panel"), matrix);
+  });
+  sortWrap.append(sortSelect);
+  filterRow.append(sortWrap);
+
+  const toggleWrap = el("label", "matrix-health__toggle");
+  const toggle = document.createElement("input");
+  toggle.type = "checkbox";
+  toggle.checked = Boolean(matrixConflictUiState.onlyMerged);
+  toggle.addEventListener("change", (event) => {
+    matrixConflictUiState.onlyMerged = Boolean(event.target.checked);
+    renderMatrixHealth(document.getElementById("matrix-panel"), matrix);
+  });
+  toggleWrap.append(toggle);
+  toggleWrap.append(el("span", "small", "nur Konflikte mit Feld-Merges"));
+  filterRow.append(toggleWrap);
+
+  controls.append(filterRow);
+  return controls;
+}
+
+function renderMatrixHotspots(matrix, hotspots) {
+  const hasContent = hotspots.top_characters.length || hotspots.reason_codes.length || hotspots.peers.length;
+  if (!hasContent) return null;
+  const section = el("div", "stack");
+  section.append(el("h3", "", "Hotspots"));
+  const grid = el("div", "matrix-health__hotspot-grid");
+
+  if (hotspots.top_characters.length) {
+    const card = el("div", "matrix-health__hotspot-card stack");
+    card.append(el("h4", "small-head", "Kritischste Charaktere"));
+    hotspots.top_characters.forEach((entry) => {
+      const row = el("div", "matrix-health__hotspot-row");
+      row.append(el("strong", "", entry.character_name || entry.character_id || "Charakter"));
+      const meta = el("div", "matrix-conflict-card__badge-row");
+      const severityBadge = renderMatrixSeverityBadge(entry.max_severity);
+      if (severityBadge) meta.append(severityBadge);
+      meta.append(el("span", "matrix-conflict-card__badge", `Feld-Merges ${Number(entry.merged_player_field_count || 0)}`));
+      meta.append(el("span", "matrix-conflict-card__badge", `Tick ${Number(entry.latest_tick || 0)}`));
+      row.append(meta);
+      card.append(row);
+    });
+    grid.append(card);
+  }
+
+  if (hotspots.reason_codes.length) {
+    const card = el("div", "matrix-health__hotspot-card stack");
+    card.append(el("h4", "small-head", "Haeufigste Gruppen"));
+    const row = el("div", "matrix-conflict-card__badge-row");
+    hotspots.reason_codes.forEach((entry) => {
+      const tone = matrixConflictPriorityCategoryTone(entry.reason_code);
+      row.append(
+        el(
+          "span",
+          tone ? `matrix-conflict-card__badge ${tone}` : "matrix-conflict-card__badge",
+          `${matrixConflictReasonCodeLabel(entry.reason_code)} ${Number(entry.count || 0)}`,
+        ),
+      );
+    });
+    card.append(row);
+    grid.append(card);
+  }
+
+  if (hotspots.peers.length) {
+    const card = el("div", "matrix-health__hotspot-card stack");
+    card.append(el("h4", "small-head", "Auffaellige Peers"));
+    hotspots.peers.forEach((entry) => {
+      card.append(
+        el(
+          "p",
+          "small",
+          `${entry.server_id} · ${entry.fresh ? "frisch" : "stale"} · ${entry.relation || entry.reason || "peer"} · Δ ${Number(entry.tick_diff || 0)}`,
+        ),
+      );
+    });
+    grid.append(card);
+  }
+
+  section.append(grid);
+  return section;
 }
 
 function renderMatrixHealth(panel, matrix) {
@@ -1025,9 +1905,11 @@ function renderMatrixHealth(panel, matrix) {
   const local = matrix.local || {};
   const chosen = matrix.chosen || {};
   const conflictSummary = matrix.conflict_summary || {};
+  const hotspots = normalizeMatrixHotspots(matrix);
   const conflicts = Array.isArray(matrix.conflicts) ? matrix.conflicts : [];
   const mergeConflicts = Array.isArray(matrix.last_merge_conflicts) ? matrix.last_merge_conflicts : [];
   const characterConflicts = normalizeMatrixCharacterConflicts(matrix, mergeConflicts);
+  const visibleCharacterConflicts = filteredMatrixCharacterConflicts(characterConflicts);
   const healthTone = health.status === "healthy"
     ? "feedback-success"
     : (health.status === "disabled" || health.status === "degraded" || health.status === "isolated" || health.status === "syncing-needed"
@@ -1041,6 +1923,8 @@ function renderMatrixHealth(panel, matrix) {
   metrics.append(el("p", "small", `Bevorzugt: ${chosen.source || "local"} · ${chosen.server_id || "—"} · Tick ${chosen.latest_tick ?? 0}`));
   metrics.append(el("p", "small", `Peers: frisch ${health.fresh_peer_count ?? 0} · stale ${health.stale_peer_count ?? 0} · Merge-Konflikte ${health.merge_conflict_count ?? 0} · Char-Konflikte ${health.character_conflict_count ?? conflictSummary.character_conflict_count ?? characterConflicts.length}`));
   metrics.append(el("p", "small", `Feld-Merges: Charaktere ${health.characters_with_field_merges ?? conflictSummary.characters_with_field_merges ?? 0} · Felder ${health.field_merge_count ?? conflictSummary.field_merge_count ?? 0}`));
+  const maxConflictSeverity = String(health.max_conflict_severity || conflictSummary.max_conflict_severity || "").trim();
+  metrics.append(el("p", "small", `Kritisch: Charaktere ${health.critical_character_conflict_count ?? conflictSummary.critical_character_conflict_count ?? 0} · Maximum ${maxConflictSeverity ? matrixConflictSeverityLabel(maxConflictSeverity) : "—"}`));
   metrics.append(el("p", "small", `Letzter Sync: ${health.last_sync_result || "idle"} · Quelle ${health.last_sync_source || "—"} · Tick ${health.last_sync_tick ?? 0}`));
   if (conflictSummary.field_group_counts && Object.keys(conflictSummary.field_group_counts).length) {
     const groupText = Object.entries(conflictSummary.field_group_counts)
@@ -1048,7 +1932,35 @@ function renderMatrixHealth(panel, matrix) {
       .join(" · ");
     metrics.append(el("p", "small", `Merge-Gruppen: ${groupText}`));
   }
+  const severitySummary = renderMatrixCountSummaryRow(
+    "Charakter-Schwere",
+    health.character_severity_counts || conflictSummary.character_severity_counts,
+    matrixConflictSeverityLabel,
+    matrixConflictSeverityTone,
+  );
+  if (severitySummary) metrics.append(severitySummary);
+  const prioritySeveritySummary = renderMatrixCountSummaryRow(
+    "Priorisierte Delta-Schwere",
+    health.priority_severity_counts || conflictSummary.priority_severity_counts,
+    matrixConflictSeverityLabel,
+    matrixConflictSeverityTone,
+  );
+  if (prioritySeveritySummary) metrics.append(prioritySeveritySummary);
   panel.append(metrics);
+
+  const hotspotSection = renderMatrixHotspots(matrix, hotspots);
+  if (hotspotSection) panel.append(hotspotSection);
+
+  if (characterConflicts.length) {
+    panel.append(renderMatrixHealthControls(matrix, characterConflicts));
+    panel.append(
+      el(
+        "p",
+        "small",
+        `Gefiltert sichtbar ${visibleCharacterConflicts.length} von ${characterConflicts.length} Charakter-Konflikten.`,
+      ),
+    );
+  }
 
   if (conflicts.length) {
     const list = el("div", "stack");
@@ -1073,9 +1985,12 @@ function renderMatrixHealth(panel, matrix) {
   if (characterConflicts.length) {
     const characterList = el("div", "stack");
     characterList.append(el("h3", "", "Betroffene Charaktere"));
-    characterConflicts.slice(0, 6).forEach((entry) => {
+    visibleCharacterConflicts.slice(0, 12).forEach((entry) => {
       characterList.append(renderMatrixCharacterConflictCard(entry, matrix, characterList.childElementCount - 1));
     });
+    if (!visibleCharacterConflicts.length) {
+      characterList.append(el("p", "small", "Die aktuellen Filter blenden gerade alle Character-Konflikte aus."));
+    }
     panel.append(characterList);
   }
 

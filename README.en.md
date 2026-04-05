@@ -22,6 +22,11 @@
 
 **Governance:** `CLIENT-PUBLIC`
 
+## Maintenance Note
+
+- For relevant content, contract, feature, or editorial changes touching this
+  endpoint, update `README.md`, `README.en.md`, and `VERSION` together.
+
 ## 2. Dependencies
 
 - Python 3.11+
@@ -59,8 +64,29 @@ endpoint or the loaded config file.
   WWW/gateway diagnostics
 - that panel now also renders condensed per-character merge conflicts,
   including merge groups such as knowledge, progress, and inventory
-- each character conflict now also exposes an expandable drilldown with field
-  lists and short compare/import hints per conflict
+- each character conflict now also exposes an expandable drilldown with real
+  field comparisons for preferred state, opposing state, and merged result,
+  plus short compare/import hints per conflict
+- larger inventory/knowledge merges now also surface delta badges and
+  server-prepared short diffs against the winning side, so important
+  changes stay readable at a glance
+- for very large merges the drilldown now also consumes server-weighted
+  `priority_preview` entries and visually separates `plus` from `upgrade`
+  hints; that prioritization now also includes domain weighting for more
+  important POIs, higher-value resources, and more critical progress flags
+- those prioritized entries now also carry a short `reason`, so the
+  drilldown can show not only what floats to the top, but also why
+- the same contract now also carries a stable `reason_code`; WWW uses it
+  for compact categories such as `critical`, `rare`, or `strategy` without
+  guessing from free-form text
+- the same panel now also renders hotspots for notable characters,
+  categories, and peers, carries stable `conflict_id`/`field_conflict_id`
+  anchors, shows compact conflict history via `seen_count`/`still_open`,
+  and exposes severity/category filters plus sort modes such as `critical
+  first`, `newest first`, and `most merges first`
+- when short diffs are truncated, the drilldown now also renders
+  truncation-aware rollups such as hidden reason-code and severity counts so
+  very large merge cases remain readable
 - if an older server does not know that endpoint yet, or temporarily fails to
   deliver it, `ShellRPG-www` falls back to a readable notice and keeps the
   rest of the UI working
@@ -84,6 +110,60 @@ Current canon preparation:
   `urban_diagnosis_line` from the persisted urban suspicion pool; WWW
   tooltips, focus areas, and city views remain tied to the same server-side
   subject refs, hint refs, and relation ids
+- the same city panel now also renders `development stage:` and
+  `protection/occupation status:` as direct lines instead of hiding those
+  hints only inside generic list blocks
+- that same city panel now also reflects dynamic server-side protectorate
+  levies, occupation pressure, and autonomy recovery without inventing its
+  own browser-side war or occupation logic
+- the same city panel now also renders `city field limits:` from the
+  server-side development stage profile; early civilization stages may
+  therefore redact diagnosis, hint, or diplomacy fields instead of assuming
+  they always exist in the browser
+- the same NPC interaction panel now also exposes a redacted `dialogue
+  limit:` and consumes stage-dependent service, quest-step, and faction
+  interpretation reductions directly from the server contract
+- those same city and NPC views now also render `city carrier:`,
+  `material basis:`, and `armory basis:` directly from the server contract
+- `Neutral Communes` can therefore now appear in the browser as explicit
+  multiethnic city carriers without the WWW layer inventing its own
+  governance or faction logic
+- NPC craftables now follow the same server-side material/recipe basis
+  instead of relying only on placeholder preview lists
+- the same NPC panel now also renders server-driven `economy profile:`,
+  `trade focus:`, `service focus:`, and `craft focus:` lines plus
+  `role craftables:` for dynamic trader/mechanic profiles
+- `npc buy ...` and `npc service ...` in the browser are therefore no
+  longer limited to legacy-only NPC roles, but also consume profession-
+  driven trader/workshop paths derived from the same carrier/material basis
+- the same WWW NPC panel now also reads `offer rotation:` and `market
+  dynamics:` plus visible per-item surcharges or discounts from the server
+  contract, so role holders, city stock, and faction specialties no longer
+  appear as a static goods list
+- those same city and NPC panels now also read `regional scarcity:`,
+  `build profile:`, and `special resources:` directly from the server
+  contract, so regional trade scarcity and faction build profiles do not
+  need to be reconstructed in the browser
+- those same city and NPC panels now also read `regional yield:` and
+  `shard pressure:` directly from the server contract, so specialty finds
+  and first controlled shard stock do not need to be guessed in the browser
+- those same city and NPC panels now also read `demand:`, `storage
+  pressure:`, and `caravan flow:` directly from the server contract, so
+  city storage, throughput, and long-range need do not need to be rebuilt
+  in the browser
+- the same WWW city panel now also reads `construction capacity:` plus a
+  dedicated `construction sites` block from the server contract, so
+  parallel build orders and their tick progress stay visible
+- the market panel stays tied to that same server contract: price reasons
+  may now combine weather pressure with regional scarcity, while specialty
+  wares such as `Infernit`, `Magnetite Lens`, or `Bog Amber Charm` fall
+  into the same visible market logic
+- those same market and NPC views may now also surface public `trade flow`
+  and `caravan throughput` price reasons whenever city storage or imported
+  wares visibly shift that same server market
+- the same market and NPC views may now also surface extra shard wares such
+  as `Ruby`, `Obsidian`, `Emerald`, `Opal`, or `Zircon Shards` from that
+  same server-driven regional and carrier logic
 
 ## 4. Feedback & Contribution
 

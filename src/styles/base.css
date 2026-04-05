@@ -476,6 +476,307 @@ select:disabled {
   padding: var(--spacing-3);
 }
 
+.matrix-conflict-card__comparison-grid,
+.matrix-conflict-card__snapshot-grid {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.matrix-conflict-card__comparison-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: var(--spacing-3);
+}
+
+.matrix-conflict-card__badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matrix-conflict-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(210, 178, 119, 0.22);
+  background: rgba(210, 178, 119, 0.08);
+  color: rgba(232, 221, 198, 0.82);
+  font-size: 0.76rem;
+}
+
+.matrix-conflict-card__badge.is-delta {
+  border-color: rgba(157, 192, 186, 0.28);
+  background: rgba(157, 192, 186, 0.1);
+  color: rgba(210, 232, 226, 0.88);
+}
+
+.matrix-conflict-card__badge.is-plus {
+  border-color: rgba(142, 184, 118, 0.28);
+  background: rgba(142, 184, 118, 0.1);
+  color: rgba(215, 235, 203, 0.88);
+}
+
+.matrix-conflict-card__badge.is-upgrade {
+  border-color: rgba(212, 161, 95, 0.34);
+  background: rgba(212, 161, 95, 0.12);
+  color: rgba(244, 221, 191, 0.9);
+}
+
+.matrix-conflict-card__badge.is-critical,
+.matrix-conflict-card__severity.is-critical {
+  border-color: rgba(210, 109, 92, 0.34);
+  background: rgba(210, 109, 92, 0.12);
+  color: rgba(255, 223, 216, 0.92);
+}
+
+.matrix-conflict-card__badge.is-high,
+.matrix-conflict-card__severity.is-high {
+  border-color: rgba(212, 161, 95, 0.34);
+  background: rgba(212, 161, 95, 0.12);
+  color: rgba(244, 221, 191, 0.92);
+}
+
+.matrix-conflict-card__badge.is-medium,
+.matrix-conflict-card__severity.is-medium {
+  border-color: rgba(157, 192, 186, 0.28);
+  background: rgba(157, 192, 186, 0.1);
+  color: rgba(210, 232, 226, 0.9);
+}
+
+.matrix-conflict-card__badge.is-low,
+.matrix-conflict-card__severity.is-low {
+  border-color: rgba(137, 167, 214, 0.26);
+  background: rgba(137, 167, 214, 0.1);
+  color: rgba(209, 220, 245, 0.9);
+}
+
+.matrix-conflict-card__badge.is-progress {
+  border-color: rgba(212, 161, 95, 0.3);
+  background: rgba(212, 161, 95, 0.1);
+  color: rgba(244, 221, 191, 0.9);
+}
+
+.matrix-conflict-card__badge.is-resource {
+  border-color: rgba(142, 184, 118, 0.28);
+  background: rgba(142, 184, 118, 0.1);
+  color: rgba(215, 235, 203, 0.9);
+}
+
+.matrix-conflict-card__badge.is-poi {
+  border-color: rgba(205, 146, 118, 0.28);
+  background: rgba(205, 146, 118, 0.1);
+  color: rgba(242, 210, 193, 0.9);
+}
+
+.matrix-conflict-card__badge.is-inventory {
+  border-color: rgba(210, 178, 119, 0.24);
+  background: rgba(210, 178, 119, 0.08);
+  color: rgba(232, 221, 198, 0.88);
+}
+
+.matrix-conflict-card__badge.is-map,
+.matrix-conflict-card__badge.is-journal {
+  border-color: rgba(137, 167, 214, 0.24);
+  background: rgba(137, 167, 214, 0.08);
+  color: rgba(209, 220, 245, 0.88);
+}
+
+.matrix-health__controls {
+  padding: var(--spacing-3);
+  border-radius: calc(var(--radius-lg) - 4px);
+  border: 1px solid rgba(210, 178, 119, 0.12);
+  background: rgba(6, 10, 16, 0.24);
+}
+
+.matrix-health__filters,
+.matrix-health__hotspot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.matrix-health__control,
+.matrix-health__toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.matrix-health__toggle {
+  justify-content: flex-end;
+  padding: 6px 0;
+}
+
+.matrix-health__toggle input {
+  margin: 0;
+}
+
+.matrix-health__select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(210, 178, 119, 0.18);
+  background: rgba(6, 10, 16, 0.58);
+  color: rgba(232, 221, 198, 0.9);
+}
+
+.matrix-health__hotspot-card {
+  padding: var(--spacing-3);
+  border-radius: calc(var(--radius-lg) - 4px);
+  border: 1px solid rgba(210, 178, 119, 0.12);
+  background: rgba(6, 10, 16, 0.24);
+}
+
+.matrix-health__hotspot-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(210, 178, 119, 0.08);
+}
+
+.matrix-health__hotspot-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.matrix-conflict-card__snapshot-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: var(--spacing-3);
+}
+
+.matrix-conflict-card__snapshot {
+  padding: var(--spacing-3);
+  border-radius: calc(var(--radius-lg) - 6px);
+  border: 1px solid rgba(210, 178, 119, 0.12);
+  background: rgba(6, 10, 16, 0.38);
+}
+
+.matrix-conflict-card__snapshot.is-merged {
+  border-color: rgba(210, 178, 119, 0.26);
+  background: rgba(24, 18, 8, 0.34);
+}
+
+.matrix-conflict-card__snapshot-list {
+  margin: var(--spacing-2) 0 0;
+  padding-left: 18px;
+  color: rgba(232, 221, 198, 0.74);
+}
+
+.matrix-conflict-card__snapshot-list li + li {
+  margin-top: 4px;
+}
+
+.matrix-conflict-card__delta {
+  margin-bottom: var(--spacing-3);
+}
+
+.matrix-conflict-card__delta-block {
+  padding: var(--spacing-3);
+  border-radius: calc(var(--radius-lg) - 6px);
+  border: 1px solid rgba(157, 192, 186, 0.16);
+  background: rgba(9, 18, 20, 0.34);
+}
+
+.matrix-conflict-card__priority-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.matrix-conflict-card__priority-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius-lg) - 8px);
+  border: 1px solid rgba(210, 178, 119, 0.12);
+  background: rgba(6, 10, 16, 0.3);
+}
+
+.matrix-conflict-card__priority-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.matrix-conflict-card__priority-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(210, 178, 119, 0.18);
+  background: rgba(6, 10, 16, 0.42);
+  color: rgba(232, 221, 198, 0.84);
+  font-size: 0.76rem;
+}
+
+.matrix-conflict-card__priority-pill.is-plus {
+  border-color: rgba(142, 184, 118, 0.28);
+  background: rgba(142, 184, 118, 0.1);
+  color: rgba(215, 235, 203, 0.9);
+}
+
+.matrix-conflict-card__priority-pill.is-upgrade {
+  border-color: rgba(212, 161, 95, 0.34);
+  background: rgba(212, 161, 95, 0.12);
+  color: rgba(244, 221, 191, 0.92);
+}
+
+.matrix-conflict-card__priority-reason {
+  margin: 0;
+  color: rgba(232, 221, 198, 0.74);
+}
+
+.matrix-conflict-card__priority-category {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(157, 192, 186, 0.22);
+  background: rgba(157, 192, 186, 0.08);
+  color: rgba(210, 232, 226, 0.88);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.matrix-conflict-card__priority-category.is-progress {
+  border-color: rgba(212, 161, 95, 0.3);
+  background: rgba(212, 161, 95, 0.1);
+  color: rgba(244, 221, 191, 0.9);
+}
+
+.matrix-conflict-card__priority-category.is-resource {
+  border-color: rgba(142, 184, 118, 0.28);
+  background: rgba(142, 184, 118, 0.1);
+  color: rgba(215, 235, 203, 0.9);
+}
+
+.matrix-conflict-card__priority-category.is-poi {
+  border-color: rgba(205, 146, 118, 0.28);
+  background: rgba(205, 146, 118, 0.1);
+  color: rgba(242, 210, 193, 0.9);
+}
+
+.matrix-conflict-card__priority-category.is-inventory {
+  border-color: rgba(210, 178, 119, 0.24);
+  background: rgba(210, 178, 119, 0.08);
+  color: rgba(232, 221, 198, 0.88);
+}
+
+.matrix-conflict-card__priority-category.is-map,
+.matrix-conflict-card__priority-category.is-journal {
+  border-color: rgba(137, 167, 214, 0.24);
+  background: rgba(137, 167, 214, 0.08);
+  color: rgba(209, 220, 245, 0.88);
+}
+
 .matrix-conflict-card__field-list {
   margin: var(--spacing-2) 0 0;
   padding-left: 18px;
@@ -484,6 +785,17 @@ select:disabled {
 
 .matrix-conflict-card__field-list li + li {
   margin-top: 4px;
+}
+
+@media (max-width: 920px) {
+  .matrix-conflict-card__snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .matrix-health__filters,
+  .matrix-health__hotspot-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .roster-card.is-active {

@@ -22,6 +22,7 @@ const matrixConflictUiState = {
 };
 let npcs = null;
 let npcMenu = null;
+let socialCatalog = null;
 let brewingCatalog = null;
 let enchantingCatalog = null;
 let artifactWeave = null;
@@ -548,6 +549,14 @@ function renderMarket(panel, market) {
   panel.append(list);
 }
 
+function formatCountdown(value, options = {}) {
+  const total = Math.max(0, Number.parseInt(value || 0, 10));
+  if (options.combat && total <= 60) return `00:${String(total).padStart(2, "0")}`;
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function renderCombat(panel, combat, status) {
   panel.innerHTML = "";
   panel.append(el("h2", "", "Kampf"));
@@ -562,15 +571,22 @@ function renderCombat(panel, combat, status) {
     row.append(card);
   });
   panel.append(row);
-  const actions = el("div", "controls-row");
-  ["attack", "guard", "dodge", "cast soul trap"].forEach((cmd) => {
-    const b = el("button", "small-button", cmd);
-    b.type = "button";
-    b.addEventListener("click", () => sendCommand(cmd));
-    actions.append(b);
-  });
-  panel.append(actions);
-  panel.append(el("p", "small", `Reaktionsfenster: ${status.reaction_seconds_left || 0}s`));
+  const choices = Array.isArray(status?.combat_choices) && status.combat_choices.length
+    ? status.combat_choices.filter((cmd) => cmd !== "auto battle on")
+    : [];
+  if (choices.length) {
+    const actions = el("div", "controls-row");
+    choices.forEach((cmd) => {
+      const b = el("button", "small-button", cmd);
+      b.type = "button";
+      b.addEventListener("click", () => sendCommand(cmd));
+      actions.append(b);
+    });
+    panel.append(actions);
+  }
+  const reaction = Number(status?.reaction_seconds_left || 0);
+  const label = status?.auto_battle_enabled ? "Auto-Battle" : "Combat";
+  panel.append(el("p", "small", `${label}: ${formatCountdown(reaction, { combat: true })}`));
 }
 
 function renderCity(panel, city) {
@@ -798,6 +814,40 @@ function renderArtifactWeave(panel, weave) {
     if (line.conditions?.length) card.append(el("p", "small", `Bedingungen: ${line.conditions.map((c) => `${c.type}:${Array.isArray(c.required) ? c.required.join('/') : c.required} → ${c.current}${c.ok ? ' ✓' : ' ✕'}`).join(' · ')}`));
     stack.append(card);
   });
+  panel.append(stack);
+}
+
+function catalogLabel(entry) {
+  const label = entry?.label || {};
+  if (typeof label === "object") return label.de || label.en || entry?.entry_id || "";
+  return String(label || entry?.entry_id || "");
+}
+
+function renderCatalogGroup(title, entries, limit = 8) {
+  const card = el("div", "stack npc-card");
+  card.append(el("strong", "", title));
+  const list = Array.isArray(entries) ? entries : [];
+  const labels = list.slice(0, limit).map(catalogLabel).filter(Boolean);
+  const hidden = Math.max(0, list.length - limit);
+  card.append(el("p", "small", labels.length ? `${labels.join(" · ")}${hidden ? ` · +${hidden}` : ""}` : "—"));
+  return card;
+}
+
+function renderSocialCatalog(panel, catalog) {
+  panel.innerHTML = "";
+  panel.append(el("h2", "", "Glossar"));
+  if (!catalog || catalog.available === false) {
+    panel.append(el("p", "small feedback-warn", catalog?.message || "Social-Catalog momentan nicht verfuegbar."));
+    return;
+  }
+  const combat = catalog.rev88_combat_glossary || {};
+  const attributes = catalog.rev88_attribute_glossary || {};
+  const stack = el("div", "stack");
+  stack.append(renderCatalogGroup("Rollenfamilien", combat.role_families));
+  stack.append(renderCatalogGroup("Magieschulen", combat.magic_schools));
+  stack.append(renderCatalogGroup("Stealth/Support", [...(combat.stealth_archetypes || []), ...(combat.support_archetypes || [])]));
+  stack.append(renderCatalogGroup("Zweiter Attributring", attributes.second_ring));
+  stack.append(renderCatalogGroup("Runtime-Bruecken", attributes.runtime_bridge_terms));
   panel.append(stack);
 }
 
@@ -2113,6 +2163,7 @@ function renderSnapshot(
   renderMatrixHealth(document.getElementById('matrix-panel'), matrixHealthState);
   renderRecovery(document.getElementById('recovery-panel'), recoveryConflicts, recoveryHistory);
   renderNPCs(document.getElementById('npc-panel'), npcs, npcMenu);
+  renderSocialCatalog(document.getElementById('catalog-panel'), socialCatalog);
   renderBrewing(document.getElementById('brew-panel'), brewingCatalog);
   renderEnchanting(document.getElementById('enchant-panel'), enchantingCatalog);
   renderArtifactWeave(document.getElementById('weave-panel'), artifactWeave);
@@ -2141,6 +2192,7 @@ async function refreshAuxiliaryState() {
     freshRegions,
     freshMatrixHealth,
     freshNpcs,
+    freshSocialCatalog,
     freshBrewing,
     freshEnchanting,
     freshWeave,
@@ -2152,6 +2204,7 @@ async function refreshAuxiliaryState() {
     fetchJson('/api/weather/regions'),
     fetchOptionalJson('/api/matrix/health'),
     fetchJson('/api/npcs'),
+    fetchOptionalJson('/api/social/catalog'),
     fetchJson('/api/brewing/catalog'),
     fetchJson('/api/enchanting/catalog'),
     fetchJson('/api/artifact/weave'),
@@ -2163,6 +2216,7 @@ async function refreshAuxiliaryState() {
   weatherRegions = freshRegions;
   matrixHealth = freshMatrixHealth;
   npcs = freshNpcs;
+  socialCatalog = freshSocialCatalog;
   brewingCatalog = freshBrewing;
   enchantingCatalog = freshEnchanting;
   artifactWeave = freshWeave;
@@ -2431,7 +2485,7 @@ async function bootstrap() {
     await loadState('Safe-Save beim Server angefragt.');
   });
 
-  await loadState("Phase v0.7.6 geladen: map-first Dark-Fantasy-Interface aktiv.");
+  await loadState("Phase v0.8.0 geladen: map-first Dark-Fantasy-Interface aktiv.");
   await startLiveUpdates();
   updateCommandComposerState();
 }

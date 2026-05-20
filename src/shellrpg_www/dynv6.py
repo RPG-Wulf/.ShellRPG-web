@@ -61,7 +61,7 @@ def update_dynv6(config: DynV6Config) -> str:
     if config.ipv6:
         params["ipv6"] = config.ipv6
     target = config.endpoint.rstrip("/") + "?" + urlencode(params)
-    request = Request(target, headers={"User-Agent": "ShellRPG-www-dynv6/0.7.6"})
+    request = Request(target, headers={"User-Agent": "ShellRPG-www-dynv6/0.8.0"})
     with urlopen(request, timeout=config.timeout_seconds) as response:
         body = response.read().decode("utf-8", errors="replace").strip()
     return body or "ok"

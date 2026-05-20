@@ -13,6 +13,36 @@ function assetPath(value) {
   return `/${raw.replace(/^\.?\//, "")}`;
 }
 
+function formatCountdown(value, options = {}) {
+  const total = Math.max(0, Number.parseInt(value || 0, 10));
+  if (options.combat && total <= 60) return `00:${String(total).padStart(2, "0")}`;
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function statusCountdown(status) {
+  if (Number(status?.reaction_seconds_left || 0) > 0) {
+    return `Combat: ${formatCountdown(status.reaction_seconds_left, { combat: true })}`;
+  }
+  if (Number(status?.activity_eta_seconds || 0) > 0) {
+    const action = status?.activity_type || status?.active_action || "Aktion";
+    const resource = status?.activity_resource_type || "";
+    const labels = {
+      walk: "Reise",
+      gather: resource === "gold" ? "Goldzyklus" : "Sammeln",
+      fish: "Angeln",
+      hunt: "Jagd",
+      explore: "Erkundung",
+    };
+    return `${labels[action] || action}: ${formatCountdown(status.activity_eta_seconds)}`;
+  }
+  if (Number(status?.idle_reward_eta_seconds || 0) > 0) {
+    return `Idle-Drop: ${formatCountdown(status.idle_reward_eta_seconds)}`;
+  }
+  return "";
+}
+
 // Uebersetzt die serverseitige Rollenkennung in eine lesbare Oberflaechenfassung fuer das HUD.
 function roleLabel(status) {
   if (status?.control_role === "active-controller") return "Aktive Steuerung";
@@ -79,6 +109,7 @@ export function renderStatusPanel(
   );
 
   const metrics = el("div", "status-ledger");
+  const countdown = statusCountdown(status);
   [
     ["HP", `${status.hp_current}/${status.hp_max}`],
     ["MP", `${status.mana_current}/${status.mana_max}`],
@@ -89,6 +120,8 @@ export function renderStatusPanel(
     ["Mond", status.moon_label || "—"],
     ["Venus", status.venus_label || "—"],
     ["Tick", `${status.tick_value}`],
+    ["Countdown", countdown || "—"],
+    ["Statuspuls", `${status.visible_status_pulse_seconds || 5}s`],
     ["Live", liveConnectionState === "live" ? "Server Events" : (liveConnectionState === "connecting" ? "verbinde ..." : "Fallback")],
     ["Auto-Battle", `${status.auto_battle_enabled ? "an" : "aus"} · ${status.auto_battle_mode || "balanced"}`],
     ["Account", status.player_account_id || "—"],

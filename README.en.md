@@ -7,7 +7,7 @@
 ║  /_/\\   U N R O L L E D   S C R O L L                            /\_\     ║
 ║  \_\/____________________________________________________________\/_/     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
-# ShellRPG-www · v0.7.6
+# ShellRPG-www · v0.8.0
 
 ## 1. Description
 
@@ -100,6 +100,10 @@ Current canon preparation:
   nature, and demons more clearly
 - inventory and status views are being prepared for six ring slots per
   character
+- the same public contract now also carries grouped combat and attribute
+  glossaries with role families, magic schools, stealth/support archetypes,
+  and a second attribute ring; the WWW now renders the same
+  `/api/social/catalog` path as a dedicated `Glossary` panel
 - map tooltips can now surface a redacted tile `Milieu` from the server map
   payload; the WWW layer intentionally avoids introducing its own parallel
   wording for the same public-safe hint
@@ -164,6 +168,12 @@ Current canon preparation:
 - the same market and NPC views may now also surface extra shard wares such
   as `Ruby`, `Obsidian`, `Emerald`, `Opal`, or `Zircon Shards` from that
   same server-driven regional and carrier logic
+- the status panel now consumes the second-based V076 public status fields
+  and renders countdowns for travel, gold cycles, combat reaction windows,
+  and idle drops together with the visible `5s` status pulse
+- the combat panel reads server-provided `combat_choices`; when auto battle
+  is active or the server sends no manual choices, WWW hides the combat
+  buttons instead of inventing browser-side options
 
 ## 4. Feedback & Contribution
 

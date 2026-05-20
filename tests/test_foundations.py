@@ -3,7 +3,7 @@ from shellrpg_www.version import RELEASE_VERSION, SERVICE_NAME
 
 
 def test_www_release_version_matches_bundle() -> None:
-    assert RELEASE_VERSION == "v0.7.6"
+    assert RELEASE_VERSION == "v0.8.0"
     assert SERVICE_NAME == "shellrpg-www"
 
 

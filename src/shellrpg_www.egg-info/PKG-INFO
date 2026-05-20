@@ -1,9 +1,13 @@
 Metadata-Version: 2.4
 Name: shellrpg-www
-Version: 0.7.6
+Version: 0.8.0
 Summary: Public web gateway and browser UI for the dedicated ShellRPG web process.
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Provides-Extra: test
+Requires-Dist: pytest<10,>=9; extra == "test"
+Provides-Extra: dev
+Requires-Dist: pytest<10,>=9; extra == "dev"
 
 Deutsch | [English](README.en.md)
 
@@ -14,7 +18,7 @@ Deutsch | [English](README.en.md)
 ║  /_/\\   A U F G E R O L L T E   S C H R I F T R O L L E         /\_\     ║
 ║  \_\/____________________________________________________________\/_/     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
-# ShellRPG-www · v0.7.6
+# ShellRPG-www · v0.8.0
 
 ## 1. Beschreibung
 
@@ -29,18 +33,31 @@ Deutsch | [English](README.en.md)
 
 **Governance:** `CLIENT-PUBLIC`
 
+## Pflegehinweis
+
+- Bei relevanten Content-, Contract-, Feature- oder Redaktionsänderungen an
+  diesem Endpunkt `README.md`, `README.en.md` und `VERSION` gemeinsam
+  aktualisieren.
+
 ## 2. Abhängigkeiten
 
 - Python 3.11+
 - Browser mit modernem JavaScript-Support
 - laufender `ShellRPG-server` für echte Daten
 - lokale oder deployte WWW-Konfiguration in `config/shellrpg-www.toml`
+- dynv6-Secrets nur lokal in ignorierten `secrets/`- oder `var/`-Dateien
 
 ## 3. Installation
 
 ```bash
 python -m pip install -e .
 shellrpg-www --config config/shellrpg-www.toml
+```
+
+Oder als schlanker Wrapper:
+
+```bash
+./shell.sh
 ```
 
 Dann im Browser öffnen:
@@ -50,6 +67,132 @@ http://127.0.0.1:8080/
 
 Der Browser spricht dabei nur mit `ShellRPG-www`.
 `ShellRPG-www` proxyt `/api/*` intern an den privaten `ShellRPG-server`, standardmäßig nach `http://127.0.0.1:8765`.
+Zusätzlich liefert `ShellRPG-www` jetzt `/asset/*` same-origin aus und
+bevorzugt dabei den GitHub-backed `ShellRPG-cdn`-Pfad, danach dynv6- und
+lokale Workspace-Fallbacks.
+- relative Config-, Secret- und Asset-Origin-Pfade werden stabil relativ zum
+  WWW-Endpunkt bzw. zur geladenen Config aufgeloest
+- der Browser nutzt jetzt zusaetzlich den expliziten Matrix-/Diagnosevertrag
+  `GET /api/matrix/health`, um einen same-origin `Servermatrix`-Panelpfad
+  fuer WWW-/Gateway-Diagnostik aufzubauen
+- dieser Panelpfad zeigt feldweise Character-Konflikte jetzt zusaetzlich
+  verdichtet pro Figur an, inklusive Merge-Gruppen wie Wissensstand,
+  Fortschritt und Inventar
+- pro Character-Konflikt gibt es dort jetzt einen aufklappbaren Drilldown mit
+  echten Feldvergleichen fuer bevorzugten Stand, Gegenseite und gemergtes
+  Ergebnis sowie kurzen Vergleichs- und Importhinweisen je Konflikt
+- grosse Inventar-/Wissensmerges zeigen dabei jetzt zusaetzlich Delta-
+  Badges und serverseitig vorbereitete Kurz-Diffs gegen den Gewinnerstand,
+  damit relevante Aenderungen schneller lesbar bleiben
+- fuer sehr grosse Merges nutzt der Drilldown jetzt serverseitig gewichtete
+  `priority_preview`-Eintraege und trennt dabei visuell zwischen `Plus`-
+  und `Upgrade`-Hinweisen; diese Priorisierung beruecksichtigt jetzt zudem
+  Domänengewichtung fuer wichtigere POIs, wertigere Ressourcen und
+  kritischere Fortschrittsflags
+- dieselben priorisierten Eintraege tragen jetzt auch einen kurzen
+  `reason`; der Drilldown zeigt damit nicht nur, was oben steht, sondern
+  direkt warum es bevorzugt wurde
+- derselbe Vertrag liefert jetzt ausserdem einen stabilen `reason_code`; das
+  WWW nutzt ihn fuer kompakte Kategorien wie `Kritisch`, `Selten` oder
+  `Strategie`, ohne Freitext raten zu muessen
+- derselbe Panelpfad zeigt jetzt ausserdem Hotspots fuer auffaellige
+  Charaktere, Gruppen und Peers, traegt konfliktstabile `conflict_id`-/
+  `field_conflict_id`-Anker, zeigt kleine Konflikthistorien mit
+  `seen_count`/`still_open` und bietet Filter fuer Schweregrad,
+  Priorisierungsgruppe sowie Sortiermodi wie `Kritisch zuerst`, `Neueste
+  zuerst` und `Meiste Merges zuerst`
+- bei abgeschnittenen Kurz-Diffs zeigt der Drilldown jetzt
+  truncation-aware Rollups wie verdeckte Reason-Code- und Severity-Summen,
+  damit auch grosse Merge-Faelle lesbar bleiben
+- falls ein aelterer Server den Endpunkt noch nicht kennt oder temporaer
+  nicht liefert, faellt `ShellRPG-www` ruhig auf einen lesbaren Hinweis
+  zurueck und haelt die restliche UI weiter funktionsfaehig
+
+`ShellRPG-www` bleibt bewusst ein Python-Gateway und kein TYPO3-/TypoScript-
+CMS-Endpunkt. Falls spaeter ein CMS noetig wird, sollte es getrennt vom
+Spiel-Gateway geplant werden; erst dann ist eine separate `tx_shellrpg_*`-
+Plugin-Linie sinnvoll.
+
+Aktuelle Kanonvorbereitung:
+- redigierte WWW-Ansichten muessen Monster, Hive, Wildlife, Natur und
+  Daemonen kuenftig klarer unterscheiden
+- Inventar- und Statusansichten werden auf sechs Ringslots pro Charakter
+  vorbereitet
+- derselbe Public-Vertrag traegt jetzt auch ein gruppiertes Kampf- und
+  Attributglossar mit Rollenfamilien, Magieschulen,
+  Stealth-/Support-Archetypen und einem zweiten Attributring; das WWW
+  rendert denselben `/api/social/catalog`-Pfad jetzt als eigenes
+  `Glossar`-Panel
+- Kartentooltips koennen jetzt redigierte Tile-Welthinweise wie ein
+  `Milieu` aus dem serverseitigen Kartenpayload anzeigen; die WWW-Schicht
+  fuehrt dafuer bewusst keine eigene Parallelterminologie ein
+- derselbe Public-Vertrag traegt jetzt auch eine redigierte
+  `urban_suspicion_line`; Kartentooltips, Fokusbereich und Stadtansicht
+  duerfen diesen Stadthinweis anzeigen, ohne eigene Verdachtsregeln im
+  Browser zu erfinden
+- derselbe Public-Vertrag traegt jetzt auch eine redigierte
+  `urban_diagnosis_line` aus dem persistierten urbanen Verdachtspool; WWW-
+  Tooltips, Fokusbereich und Stadtansicht bleiben dabei an denselben
+  serverseitigen Subject-/Hint-/Relations-Refs gebunden
+- dieselbe Stadtansicht zeigt jetzt ausserdem `Entwicklungsstufe:` und
+  `Schutz-/Besatzungslage:` direkt als eigene Zeilen, statt diese Hinweise
+  nur indirekt in Sammellisten zu verstecken
+- dieselbe Stadtansicht spiegelt jetzt auch dynamische serverseitige
+  Protektoratsabgaben, Besatzungsdruck und Autonomie-Rueckgewinnung, ohne
+  browserseitig eigene Kriegs- oder Besatzungslogik zu rechnen
+- dieselbe WWW-Stadtansicht rendert jetzt auch `Stadtfeldgrenzen:` aus dem
+  serverseitigen Entwicklungsstufenprofil; fruehe Zivilisationsstufen
+  duerfen damit Diagnose-, Hinweis- oder Diplomatiefelder redigiert knapper
+  zeigen, statt sie im Browser immer vorauszusetzen
+- dasselbe NPC-Interaktionsmenue zeigt jetzt ausserdem eine redigierte
+  `Dialoggrenze:` und konsumiert stage-abhaengig verknappte Dienste,
+  Questschritte und Fraktionsdeutungen direkt aus dem Serververtrag
+- dieselben Stadt- und NPC-Ansichten zeigen jetzt ausserdem
+  `Stadttraeger:`, `Materialbasis:` und `Ruestkammer:` direkt aus dem
+  Serververtrag
+- `Neutrale Kommunen` koennen dadurch im Browser jetzt auch als explizite
+  multiethnische Stadttraeger erscheinen, ohne dass das WWW eigene
+  Governance- oder Fraktionslogik rechnen muss
+- Craftables im NPC-Menue folgen damit jetzt derselben serverseitigen
+  Material-/Rezeptbasis statt blossen Platzhalterlisten
+- dieselbe NPC-Ansicht zeigt jetzt ausserdem serverseitige
+  `Wirtschaftsprofil:`-, `Handelsfokus:`-, `Servicefokus:`- und
+  `Werkfokus:`-Linien sowie `Rollen-Craftables:` fuer dynamische
+  Trader-/Mechanic-Profile
+- `npc buy ...` und `npc service ...` koennen damit im Browser nicht mehr
+  nur Legacy-Rollen konsumieren, sondern auch berufsgetriebene
+  Trader-/Werkstattpfade, die aus derselben Carrier-/Materialbasis
+  abgeleitet werden
+- dieselbe WWW-NPC-Ansicht liest jetzt ausserdem `Angebotsrotation:` und
+  `Handelsdynamik:` sowie sichtbare Preisaufschlaege oder Nachlaesse pro
+  Ware aus dem Serververtrag, sodass Rollentraeger, Stadtstock und
+  Fraktionsspezialitaeten nicht mehr als starre Warenliste erscheinen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem
+  `Regionale Knappheit:`, `Bauprofil:` und `Spezialressourcen:` direkt aus
+  dem Serververtrag, sodass regionale Handelsknappheit und
+  Fraktions-Bauprofile nicht browserseitig rekonstruiert werden muessen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem
+  `Regionale Ader:` und `Splitterdruck:` direkt aus dem Serververtrag,
+  sodass regionale Spezialfunde und erste kontrollierte Splitterware nicht
+  browserseitig geraten werden muessen
+- dieselben Stadt- und NPC-Panels lesen jetzt ausserdem `Nachfrage:`,
+  `Lagerdruck:` und `Karawanenfluss:` direkt aus dem Serververtrag, sodass
+  Stadtlager, Umschlag und Fernbedarf ebenfalls nicht browserseitig
+  nachgebaut werden muessen
+- dieselbe WWW-Stadtansicht liest jetzt ausserdem
+  `Baustellenkapazitaet:` und einen eigenen `Baustellen`-Block aus dem
+  Serververtrag, sodass parallele Bauauftraege und ihr Tick-Fortschritt
+  sichtbar bleiben
+- das Marktpanel bleibt beim selben Serververtrag: Preisgruende koennen nun
+  Wetterdruck plus regionale Knappheit zusammen erklaeren, waehrend
+  Spezialwaren wie `Infernit`, `Magnetitlinse` oder
+  `Moorbernstein-Amulett` sichtbar in dieselbe Marktlogik fallen
+- dieselben Markt- und NPC-Ansichten duerfen jetzt auch oeffentliche
+  `Handelsstrom`- und `Karawanenumschlag`-Preisgruende zeigen, wenn
+  Stadtlager oder Fernware denselben Servermarkt sichtbar verschieben
+- dieselbe Markt- und NPC-Ansicht darf jetzt auch zusaetzliche Splitterware
+  wie `Rubin-`, `Obsidian-`, `Smaragd-`, `Opal-` oder `Zirkon-Splitter`
+  aus derselben serverseitigen Regional- und Carrierlogik lesen
 
 ## 4. Feedback & Contribution
 

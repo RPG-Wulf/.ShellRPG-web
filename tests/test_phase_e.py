@@ -17,9 +17,16 @@ def test_www_bundle_exposes_matrix_health_panel_contract() -> None:
     root = artifact_root()
     index_html = (root / "public" / "index.html").read_text(encoding="utf-8")
     app_js = (root / "src" / "app.js").read_text(encoding="utf-8")
+    status_panel_js = (root / "src" / "features" / "status" / "statusPanel.js").read_text(encoding="utf-8")
 
     assert 'id="matrix-panel"' in index_html
+    assert 'id="catalog-panel"' in index_html
     assert "/api/matrix/health" in app_js
+    assert "/api/social/catalog" in app_js
+    assert "function renderSocialCatalog" in app_js
+    assert "rev88_combat_glossary" in app_js
+    assert "rev88_attribute_glossary" in app_js
+    assert "Zweiter Attributring" in app_js
     assert "function renderMatrixHealth" in app_js
     assert "character_conflicts" in app_js
     assert "Betroffene Charaktere" in app_js
@@ -80,3 +87,12 @@ def test_www_bundle_exposes_matrix_health_panel_contract() -> None:
     assert "craft_focus_line" in app_js
     assert "Rollen-Craftables:" in app_js
     assert "market_adjustment_pct" in app_js
+    assert "formatCountdown" in app_js
+    assert "status.combat_choices" in app_js
+    assert "Auto-Battle" in app_js
+    assert "Combat" in app_js
+    assert "activity_eta_seconds" in status_panel_js
+    assert "visible_status_pulse_seconds" in status_panel_js
+    assert "Idle-Drop" in status_panel_js
+    assert "Goldzyklus" in status_panel_js
+    assert "Combat" in status_panel_js

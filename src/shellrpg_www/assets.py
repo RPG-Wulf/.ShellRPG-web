@@ -134,7 +134,7 @@ def resolve_local_asset(root: Path, asset_path: str) -> Path | None:
 
 
 def _fetch_remote(url: str, timeout_seconds: float) -> AssetPayload | None:
-    request = Request(url, headers={"User-Agent": "ShellRPG-www-asset-proxy/0.7.6"})
+    request = Request(url, headers={"User-Agent": "ShellRPG-www-asset-proxy/0.8.0"})
     try:
         with urlopen(request, timeout=timeout_seconds) as response:
             return AssetPayload(

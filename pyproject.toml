@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shellrpg-www"
-version = "0.7.6"
+version = "0.8.0"
 description = "Public web gateway and browser UI for the dedicated ShellRPG web process."
 readme = "README.md"
 requires-python = ">=3.11"

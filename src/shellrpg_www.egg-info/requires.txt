@@ -1,0 +1,6 @@
+
+[dev]
+pytest<10,>=9
+
+[test]
+pytest<10,>=9

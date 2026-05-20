@@ -7,7 +7,7 @@ Deutsch | [English](README.en.md)
 ║  /_/\\   A U F G E R O L L T E   S C H R I F T R O L L E         /\_\     ║
 ║  \_\/____________________________________________________________\/_/     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
-# ShellRPG-www · v0.7.6
+# ShellRPG-www · v0.8.0
 
 ## 1. Beschreibung
 
@@ -107,6 +107,11 @@ Aktuelle Kanonvorbereitung:
   Daemonen kuenftig klarer unterscheiden
 - Inventar- und Statusansichten werden auf sechs Ringslots pro Charakter
   vorbereitet
+- derselbe Public-Vertrag traegt jetzt auch ein gruppiertes Kampf- und
+  Attributglossar mit Rollenfamilien, Magieschulen,
+  Stealth-/Support-Archetypen und einem zweiten Attributring; das WWW
+  rendert denselben `/api/social/catalog`-Pfad jetzt als eigenes
+  `Glossar`-Panel
 - Kartentooltips koennen jetzt redigierte Tile-Welthinweise wie ein
   `Milieu` aus dem serverseitigen Kartenpayload anzeigen; die WWW-Schicht
   fuehrt dafuer bewusst keine eigene Parallelterminologie ein
@@ -177,6 +182,13 @@ Aktuelle Kanonvorbereitung:
 - dieselbe Markt- und NPC-Ansicht darf jetzt auch zusaetzliche Splitterware
   wie `Rubin-`, `Obsidian-`, `Smaragd-`, `Opal-` oder `Zirkon-Splitter`
   aus derselben serverseitigen Regional- und Carrierlogik lesen
+- das Statuspanel konsumiert jetzt die Sekundenfelder des V076-
+  Public-Statusvertrags und rendert Countdowns fuer Reise, Goldzyklus,
+  Combat-Reaktionsfenster und Idle-Drop samt sichtbarem `5s`-Statuspuls
+- das Combat-Panel liest die serverseitigen `combat_choices`; wenn
+  Auto-Battle aktiv ist oder der Server keine manuellen Wahloptionen
+  liefert, blendet das WWW die Kampfbuttons aus statt eigene Optionen zu
+  erfinden
 
 ## 4. Feedback & Contribution
 

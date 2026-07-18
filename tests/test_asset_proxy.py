@@ -20,12 +20,12 @@ def test_candidate_remote_bases_include_local_extra_nodes(tmp_path: Path) -> Non
     extra = tmp_path / "asset-origins.toml"
     extra.write_text("[origins]\nadditional_base_urls = ['https://cdn-node-a.example/assets/www']\n", encoding="utf-8")
     config = WWWConfig(
-        asset_primary_base_url="https://cdn.jsdelivr.net/gh/RPGheros/ShellRPG-cdn@main/assets/www",
+        asset_primary_base_url="https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www",
         asset_fallback_base_urls=("https://cdn-shellrpg.dns.army/assets/www",),
         asset_origin_candidates_path=str(extra),
     )
     assert candidate_remote_bases(config) == (
-        "https://cdn.jsdelivr.net/gh/RPGheros/ShellRPG-cdn@main/assets/www",
+        "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www",
         "https://cdn-shellrpg.dns.army/assets/www",
         "https://cdn-node-a.example/assets/www",
     )

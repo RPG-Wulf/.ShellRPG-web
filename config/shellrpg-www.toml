@@ -11,7 +11,7 @@ cookie_name = "shellrpg_session"
 
 [assets]
 asset_proxy_route = "/asset"
-asset_primary_base_url = "https://cdn.jsdelivr.net/gh/RPGheros/ShellRPG-cdn@main/assets/www"
+asset_primary_base_url = "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www"
 asset_fallback_base_urls = ["https://cdn-shellrpg.dns.army/assets/www"]
 asset_origin_candidates_path = "./var/asset-origins.toml"
 asset_request_timeout_seconds = 1.2

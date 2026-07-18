@@ -44,7 +44,7 @@ class WWWConfig:
     request_timeout_seconds: float = 10.0
     session_cookie_name: str = "shellrpg_session"
     asset_proxy_route: str = "/asset"
-    asset_primary_base_url: str = "https://cdn.jsdelivr.net/gh/RPGheros/ShellRPG-cdn@main/assets/www"
+    asset_primary_base_url: str = "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www"
     asset_fallback_base_urls: tuple[str, ...] = ("https://cdn-shellrpg.dns.army/assets/www",)
     asset_origin_candidates_path: str = "./var/asset-origins.toml"
     asset_request_timeout_seconds: float = 1.2
@@ -68,7 +68,7 @@ def load_www_config(path: str | None = None) -> WWWConfig:
         request_timeout_seconds=float(backend.get("request_timeout_seconds", 10.0)),
         session_cookie_name=str(session.get("cookie_name", "shellrpg_session")),
         asset_proxy_route=str(assets.get("asset_proxy_route", "/asset")),
-        asset_primary_base_url=str(assets.get("asset_primary_base_url", "https://cdn.jsdelivr.net/gh/RPGheros/ShellRPG-cdn@main/assets/www")),
+        asset_primary_base_url=str(assets.get("asset_primary_base_url", "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www")),
         asset_fallback_base_urls=_tuple(assets.get("asset_fallback_base_urls", ["https://cdn-shellrpg.dns.army/assets/www"])),
         asset_origin_candidates_path=_resolve_path(config_dir, assets.get("asset_origin_candidates_path", "./var/asset-origins.toml")),
         asset_request_timeout_seconds=float(assets.get("asset_request_timeout_seconds", 1.2)),

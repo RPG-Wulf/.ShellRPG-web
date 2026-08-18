@@ -17,7 +17,6 @@ coverage/
 tmp/
 *.tmp
 *.cache
-*.lock
 
 # --- Frontend / Node ---
 node_modules/

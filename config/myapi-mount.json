@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "project_id": "shellrpg-www",
+  "repository": "RPG-Wulf/.ShellRPG-web",
+  "public_prefix": "/idle-quest/",
+  "internal_base_path": "/",
+  "strip_prefix_at_ingress": true,
+  "health_path": "/health",
+  "route_ownership": {
+    "mode": "fallback_except",
+    "excluded_routes": [
+      "/api/health",
+      "/api/state",
+      "/api/world",
+      "/api/command"
+    ]
+  },
+  "notes": "ShellRPG-www already consumes root-relative browser and /api/* paths. The four exact IdleQuest viewport API routes are excluded from this fallback and remain owned by RPG-Wulf/.idleQuest."
+}

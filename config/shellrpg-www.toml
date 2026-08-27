@@ -9,6 +9,9 @@ request_timeout_seconds = 10.0
 [session]
 cookie_name = "shellrpg_session"
 
+[integration]
+wiki_base_url = "https://wiki.shellrpg.tld"
+
 [assets]
 asset_proxy_route = "/asset"
 asset_primary_base_url = "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www"

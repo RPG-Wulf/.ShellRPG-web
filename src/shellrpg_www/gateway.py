@@ -92,6 +92,13 @@ def canonical_cdn_media_url(config: WWWConfig, request_path: str) -> str | None:
     return config.asset_primary_base_url.rstrip("/") + "/" + normalized
 
 
+def backend_unavailable_payload() -> dict[str, object]:
+    return {
+        "ok": False,
+        "message": "Private ShellRPG backend is currently unavailable.",
+    }
+
+
 def session_token_from_cookie(cookie_header: str, cookie_name: str) -> str | None:
     if not cookie_header:
         return None
@@ -238,15 +245,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 status = exc.code
                 raw_body = exc.read()
                 response_headers = exc.headers
-            except URLError as exc:
-                self._write_json(
-                    {
-                        "ok": False,
-                        "message": "Private ShellRPG backend is currently unavailable.",
-                        "detail": str(exc.reason),
-                    },
-                    status=502,
-                )
+            except URLError:
+                self._write_json(backend_unavailable_payload(), status=502)
                 return
 
             content_type = response_headers.get("Content-Type", "application/json; charset=utf-8")
@@ -279,15 +279,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                     extra_headers={"Cache-Control": "no-store"},
                 )
                 return
-            except URLError as exc:
-                self._write_json(
-                    {
-                        "ok": False,
-                        "message": "Private ShellRPG backend is currently unavailable.",
-                        "detail": str(exc.reason),
-                    },
-                    status=502,
-                )
+            except URLError:
+                self._write_json(backend_unavailable_payload(), status=502)
                 return
 
             with upstream:

@@ -1,5 +1,10 @@
 from shellrpg_www.config import WWWConfig
-from shellrpg_www.gateway import build_health_payload, build_public_site_config, canonical_cdn_media_url
+from shellrpg_www.gateway import (
+    backend_unavailable_payload,
+    build_health_payload,
+    build_public_site_config,
+    canonical_cdn_media_url,
+)
 
 
 def test_public_site_config_exposes_only_public_integration_urls() -> None:
@@ -27,3 +32,12 @@ def test_health_payload_does_not_publish_private_backend_address() -> None:
     assert payload["ok"] is True
     assert "backend_base_url" not in payload
     assert "127.0.0.1" not in str(payload)
+
+
+def test_backend_unavailable_payload_is_public_safe() -> None:
+    payload = backend_unavailable_payload()
+    assert payload == {
+        "ok": False,
+        "message": "Private ShellRPG backend is currently unavailable.",
+    }
+    assert "detail" not in payload

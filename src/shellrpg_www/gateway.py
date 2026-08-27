@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-from shellrpg_www.assets import load_asset_payload
+from shellrpg_www.assets import load_asset_payload, normalize_asset_path
 from shellrpg_www.config import WWWConfig
 from shellrpg_www.version import HTTP_SERVER_VERSION, RELEASE_VERSION, SERVICE_NAME
 
@@ -45,14 +45,51 @@ def build_proxy_target(base_url: str, request_path: str) -> str:
     return base_url.rstrip("/") + "/" + request_path.lstrip("/")
 
 
-def build_session_cookie(cookie_name: str, token: str) -> str:
+def forwarded_proto_from_headers(headers) -> str:
+    raw = str(headers.get("X-Forwarded-Proto", "") or "")
+    proto = raw.split(",", 1)[0].strip().lower()
+    return proto if proto in {"http", "https"} else "http"
+
+
+def build_session_cookie(cookie_name: str, token: str, secure: bool = False) -> str:
     cookie = SimpleCookie()
     cookie[cookie_name] = token
     morsel = cookie[cookie_name]
     morsel["path"] = "/"
     morsel["httponly"] = True
     morsel["samesite"] = "Lax"
+    if secure:
+        morsel["secure"] = True
     return morsel.OutputString()
+
+
+def build_public_site_config(config: WWWConfig) -> dict[str, str]:
+    return {
+        "wiki_base_url": config.wiki_base_url.rstrip("/"),
+        "cdn_image_base_url": config.asset_primary_base_url.rstrip("/"),
+    }
+
+
+def build_health_payload(config: WWWConfig) -> dict[str, object]:
+    del config
+    return {
+        "ok": True,
+        "service": SERVICE_NAME,
+        "version": RELEASE_VERSION,
+    }
+
+
+def canonical_cdn_media_url(config: WWWConfig, request_path: str) -> str | None:
+    path = urlsplit(request_path).path
+    if not path.startswith("/public/media/"):
+        return None
+    normalized = normalize_asset_path(
+        config.asset_proxy_route.rstrip("/") + path,
+        route_prefix=config.asset_proxy_route,
+    )
+    if normalized is None:
+        return None
+    return config.asset_primary_base_url.rstrip("/") + "/" + normalized
 
 
 def session_token_from_cookie(cookie_header: str, cookie_name: str) -> str | None:
@@ -135,6 +172,13 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self._write_bytes(body, "application/json; charset=utf-8", status=status, extra_headers=headers)
 
+        def _redirect(self, location: str, status: int = 308) -> None:
+            self.send_response(status)
+            self.send_header("Location", location)
+            self.send_header("Cache-Control", "public, max-age=300")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
         def _read_body(self) -> bytes:
             length = int(self.headers.get("Content-Length", "0"))
             return self.rfile.read(length) if length else b""
@@ -154,7 +198,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             asset = load_asset_payload(config, root, self.path)
             if asset is None:
                 return False
-            self._write_bytes(asset.body, asset.content_type, extra_headers={"Cache-Control": "public, max-age=60"})
+            self._write_bytes(asset.body, asset.content_type, extra_headers={"Cache-Control": "public, max-age=300"})
             return True
 
         def _proxy_request(self) -> None:
@@ -168,7 +212,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 headers["X-Forwarded-For"] = forwarded_for
             if forwarded_host := self.headers.get("Host"):
                 headers["X-Forwarded-Host"] = forwarded_host
-            headers["X-Forwarded-Proto"] = "http"
+            forwarded_proto = forwarded_proto_from_headers(self.headers)
+            headers["X-Forwarded-Proto"] = forwarded_proto
             session_token = self.headers.get("X-Session-Token") or session_token_from_cookie(
                 self.headers.get("Cookie", ""),
                 config.session_cookie_name,
@@ -197,7 +242,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 self._write_json(
                     {
                         "ok": False,
-                        "message": f"ShellRPG-server unter {config.backend_base_url} nicht erreichbar.",
+                        "message": "Private ShellRPG backend is currently unavailable.",
                         "detail": str(exc.reason),
                     },
                     status=502,
@@ -215,6 +260,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                     extra_headers["Set-Cookie"] = build_session_cookie(
                         config.session_cookie_name,
                         str(payload["session_token"]),
+                        secure=forwarded_proto == "https",
                     )
                     raw_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                     content_type = "application/json; charset=utf-8"
@@ -237,7 +283,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                 self._write_json(
                     {
                         "ok": False,
-                        "message": f"ShellRPG-server unter {config.backend_base_url} nicht erreichbar.",
+                        "message": "Private ShellRPG backend is currently unavailable.",
                         "detail": str(exc.reason),
                     },
                     status=502,
@@ -267,19 +313,22 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                     return
 
         def _handle_health(self) -> None:
-            self._write_json(
-                {
-                    "ok": True,
-                    "service": SERVICE_NAME,
-                    "version": RELEASE_VERSION,
-                    "backend_base_url": config.backend_base_url,
-                }
-            )
+            self._write_json(build_health_payload(config))
 
         def _dispatch_readonly(self) -> None:
             path = urlsplit(self.path).path
             if path == "/health":
                 self._handle_health()
+                return
+            if path == "/site-config.json":
+                self._write_json(build_public_site_config(config))
+                return
+            if path.startswith("/public/media/"):
+                target = canonical_cdn_media_url(config, self.path)
+                if target:
+                    self._redirect(target)
+                    return
+                self._write_json({"ok": False, "message": f"Unsupported media path: {path}"}, status=404)
                 return
             if path.startswith(config.asset_proxy_route.rstrip("/") + "/"):
                 if self._serve_cdn_asset():
@@ -319,7 +368,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
 def run_gateway(config: WWWConfig) -> None:
     root = artifact_root()
     print(f"{SERVICE_NAME} {RELEASE_VERSION} auf http://{config.host}:{config.port}")
-    print(f"Proxy-Ziel: {config.backend_base_url}")
+    print("Private backend configured.")
     handler = make_handler(config, root)
     with ThreadingHTTPServer((config.host, config.port), handler) as httpd:
         httpd.serve_forever()

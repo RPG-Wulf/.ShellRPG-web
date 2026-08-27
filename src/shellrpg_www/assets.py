@@ -14,13 +14,10 @@ from shellrpg_www.config import WWWConfig
 
 
 SAFE_ASSET_SUFFIXES = {
-    ".css",
     ".gif",
     ".ico",
     ".jpeg",
     ".jpg",
-    ".js",
-    ".json",
     ".png",
     ".svg",
     ".webp",
@@ -31,9 +28,6 @@ ALLOWED_ASSET_PREFIXES = (
 )
 
 CONTENT_TYPE_OVERRIDES = {
-    ".css": "text/css; charset=utf-8",
-    ".js": "text/javascript; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
     ".svg": "image/svg+xml",
 }
 

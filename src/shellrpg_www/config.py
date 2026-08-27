@@ -43,6 +43,7 @@ class WWWConfig:
     backend_base_url: str = "http://127.0.0.1:8765"
     request_timeout_seconds: float = 10.0
     session_cookie_name: str = "shellrpg_session"
+    wiki_base_url: str = "https://wiki.shellrpg.tld"
     asset_proxy_route: str = "/asset"
     asset_primary_base_url: str = "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www"
     asset_fallback_base_urls: tuple[str, ...] = ("https://cdn-shellrpg.dns.army/assets/www",)
@@ -60,6 +61,7 @@ def load_www_config(path: str | None = None) -> WWWConfig:
     www = data.get("www", {}) if isinstance(data, dict) else {}
     backend = data.get("backend", {}) if isinstance(data, dict) else {}
     session = data.get("session", {}) if isinstance(data, dict) else {}
+    integration = data.get("integration", {}) if isinstance(data, dict) else {}
     assets = data.get("assets", {}) if isinstance(data, dict) else {}
     return WWWConfig(
         host=str(www.get("host", "127.0.0.1")),
@@ -67,6 +69,7 @@ def load_www_config(path: str | None = None) -> WWWConfig:
         backend_base_url=str(backend.get("base_url", os.getenv("SHELLRPG_SERVER_URL", "http://127.0.0.1:8765"))),
         request_timeout_seconds=float(backend.get("request_timeout_seconds", 10.0)),
         session_cookie_name=str(session.get("cookie_name", "shellrpg_session")),
+        wiki_base_url=str(integration.get("wiki_base_url", "https://wiki.shellrpg.tld")),
         asset_proxy_route=str(assets.get("asset_proxy_route", "/asset")),
         asset_primary_base_url=str(assets.get("asset_primary_base_url", "https://cdn.jsdelivr.net/gh/RPG-Wulf/ShellRPG-cdn@main/assets/www")),
         asset_fallback_base_urls=_tuple(assets.get("asset_fallback_base_urls", ["https://cdn-shellrpg.dns.army/assets/www"])),

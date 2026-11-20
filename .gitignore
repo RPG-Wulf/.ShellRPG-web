@@ -75,3 +75,4 @@ Thumbs.db
 !tests/
 !public/
 !assets/
+/.agents/

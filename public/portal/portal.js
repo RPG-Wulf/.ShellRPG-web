@@ -50,6 +50,15 @@ function renderCharacters(entries, limit) {
   byId('logout').hidden = false;
 }
 
+function signInLinks(providers, linking) {
+  return providers.map(provider => {
+    const link = document.createElement('a');
+    link.href = '/auth/' + provider + '/start' + (linking ? '?connect=1' : '');
+    link.textContent = 'Mit ' + labels[provider] + (linking ? ' verbinden' : ' anmelden');
+    return link;
+  });
+}
+
 async function show() {
   const {providers, character_limit: limit} = await api('/auth/providers');
   const authorized = await api('/api/characters').catch(error => {
@@ -57,20 +66,20 @@ async function show() {
     return null;
   });
   if (authorized) {
-    byId('providers').replaceChildren();
-    return renderCharacters(authorized.entries, limit);
+    const linked = new Set(authorized.linked_auth_providers || []);
+    byId('providers').replaceChildren(...signInLinks(providers.filter(provider => !linked.has(provider)), true));
+    renderCharacters(authorized.entries, limit);
+    if (new URLSearchParams(location.search).get('anmeldung') === 'fehlgeschlagen') {
+      message.textContent = 'Die Verknüpfung ist fehlgeschlagen. Die bisherigen Charaktere bleiben verfügbar.';
+    }
+    return;
   }
   creation.hidden = true;
   byId('logout').hidden = true;
   const failed = new URLSearchParams(location.search).get('anmeldung') === 'fehlgeschlagen';
   message.textContent = failed ? 'Die Anmeldung ist fehlgeschlagen. Versuche es erneut.' :
     providers.length ? 'Melde dich an, um deine Charaktere zu speichern.' : 'Für diese Adresse ist noch kein Anmeldeanbieter eingerichtet.';
-  byId('providers').replaceChildren(...providers.map(provider => {
-    const link = document.createElement('a');
-    link.href = '/auth/' + provider + '/start';
-    link.textContent = 'Mit ' + labels[provider] + ' anmelden';
-    return link;
-  }));
+  byId('providers').replaceChildren(...signInLinks(providers, false));
 }
 
 creation.addEventListener('submit', async event => {

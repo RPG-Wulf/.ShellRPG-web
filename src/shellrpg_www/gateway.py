@@ -45,13 +45,15 @@ def build_proxy_target(base_url: str, request_path: str) -> str:
     return base_url.rstrip("/") + "/" + request_path.lstrip("/")
 
 
-def build_session_cookie(cookie_name: str, token: str) -> str:
+def build_session_cookie(cookie_name: str, token: str, *, secure: bool = False) -> str:
     cookie = SimpleCookie()
     cookie[cookie_name] = token
     morsel = cookie[cookie_name]
     morsel["path"] = "/"
     morsel["httponly"] = True
     morsel["samesite"] = "Lax"
+    if secure:
+        morsel["secure"] = True
     return morsel.OutputString()
 
 
@@ -102,7 +104,7 @@ def guess_content_type(path: Path) -> str:
     return guessed or "application/octet-stream"
 
 
-def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
+def make_handler(config: WWWConfig, root: Path, *, site=None) -> type[BaseHTTPRequestHandler]:
     class ShellRPGWWWHandler(BaseHTTPRequestHandler):
         server_version = HTTP_SERVER_VERSION
 
@@ -137,6 +139,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
 
         def _read_body(self) -> bytes:
             length = int(self.headers.get("Content-Length", "0"))
+            if not 0 <= length <= 65_536:
+                raise ValueError("request length")
             return self.rfile.read(length) if length else b""
 
         # Erkennt denselben Live-Event-Stream wie der Browser-Client und leitet ihn ungepuffert weiter.
@@ -158,7 +162,11 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             return True
 
         def _proxy_request(self) -> None:
-            body = self._read_body() if self.command in {"POST", "PUT", "PATCH"} else b""
+            try:
+                body = self._read_body() if self.command in {"POST", "PUT", "PATCH"} else b""
+            except ValueError:
+                self._write_json({"ok": False, "message": "Ungültige Anfrage."}, status=400)
+                return
             headers: dict[str, str] = {}
             if accept := self.headers.get("Accept"):
                 headers["Accept"] = accept
@@ -215,6 +223,7 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
                     extra_headers["Set-Cookie"] = build_session_cookie(
                         config.session_cookie_name,
                         str(payload["session_token"]),
+                        secure=bool(site and site.is_https_host(self)),
                     )
                     raw_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                     content_type = "application/json; charset=utf-8"
@@ -277,6 +286,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             )
 
         def _dispatch_readonly(self) -> None:
+            if site and site(self):
+                return
             path = urlsplit(self.path).path
             if path == "/health":
                 self._handle_health()
@@ -304,6 +315,8 @@ def make_handler(config: WWWConfig, root: Path) -> type[BaseHTTPRequestHandler]:
             self.end_headers()
 
         def do_POST(self) -> None:
+            if site and site(self):
+                return
             path = urlsplit(self.path).path
             if not path.startswith("/api/"):
                 self._write_json({"ok": False, "message": f"Unknown path: {path}"}, status=404)

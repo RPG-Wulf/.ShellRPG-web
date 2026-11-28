@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Charaktere · ShellRPG</title>
+<link rel="stylesheet" href="/public/portal/portal.css">
+<script src="/public/portal/portal.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">ShellRPG</a>
+  <nav aria-label="Spiel"><a href="/world/">Welt</a><a href="/pangae/">Pangae</a><a href="/wiki/">Wiki</a></nav>
+</header>
+<main class="portal">
+  <section class="hero" aria-labelledby="portal-title">
+    <div><h1 id="portal-title">Das Tor von Graufurt</h1><p>Erstelle eine Figur und betritt die Welt von ShellRPG.</p></div>
+  </section>
+  <section class="panel" aria-labelledby="character-title">
+    <div class="panel-heading"><h2 id="character-title">Deine Charaktere</h2><span id="slots">0 / 5</span></div>
+    <p id="message" role="status">Konto wird geprüft …</p>
+    <div id="providers" class="providers" aria-label="Anmeldeanbieter"></div>
+    <ul id="characters" class="characters"></ul>
+    <form id="create" hidden>
+      <label>Name<input id="name" name="character_name" minlength="2" maxlength="32" required autocomplete="off"></label>
+      <div class="choices">
+        <label>Rasse<select name="race_name"><option>Mensch</option><option>Nekari</option><option>Ssarathi</option><option>Salzlunge</option><option>Waldelf</option><option>Dryade</option><option>Baumwesen</option><option>Ork</option><option>Zwerg</option></select></label>
+        <label>Klasse<select name="class_name"><option>Ritter</option><option>Totenbeschwörer</option><option>Kleriker</option><option>Waldläufer</option><option>Magier</option><option>Dieb</option><option>Beastmaster</option><option>Kämpfer</option><option>Berserker</option></select></label>
+        <label>Fraktion<select name="faction"><option>Menschen</option><option>Amazonen</option><option>Waldelfen</option><option>Dryaden</option><option>Baumwesen</option><option>Nekari</option><option>Ssarathi</option><option>Salzlungen</option><option>Orks</option><option>Dämonen</option></select></label>
+      </div>
+      <button type="submit">Charakter erstellen</button>
+    </form>
+    <form id="logout" action="/auth/logout" method="post" hidden><button class="secondary" type="submit">Abmelden</button></form>
+  </section>
+</main>
+</body>
+</html>

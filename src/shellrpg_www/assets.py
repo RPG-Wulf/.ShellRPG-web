@@ -110,6 +110,8 @@ def candidate_remote_bases(config: WWWConfig) -> tuple[str, ...]:
 def candidate_local_roots(root: Path) -> tuple[Path, ...]:
     bundle_root = root.parent
     values = [
+        bundle_root / "cdn" / "assets" / "www",
+        bundle_root / ".ShellRPG-cdn" / "assets" / "www",
         bundle_root / "ShellRPG-cdn" / "assets" / "www",
         root,
     ]
@@ -177,11 +179,8 @@ def load_asset_payload(config: WWWConfig, root: Path, request_path: str) -> Asse
     asset_path = normalize_asset_path(request_path, route_prefix=config.asset_proxy_route)
     if not asset_path:
         return None
-    remote_urls = tuple(build_remote_asset_url(base, asset_path) for base in candidate_remote_bases(config))
-    remote = fetch_first_remote_asset(remote_urls, timeout_seconds=config.asset_request_timeout_seconds)
-    if remote is not None:
-        return remote
     local = resolve_local_asset(root, asset_path)
-    if local is None:
-        return None
-    return AssetPayload(body=local.read_bytes(), content_type=guess_content_type(local), source=str(local))
+    if local is not None:
+        return AssetPayload(body=local.read_bytes(), content_type=guess_content_type(local), source=str(local))
+    remote_urls = tuple(build_remote_asset_url(base, asset_path) for base in candidate_remote_bases(config))
+    return fetch_first_remote_asset(remote_urls, timeout_seconds=config.asset_request_timeout_seconds)

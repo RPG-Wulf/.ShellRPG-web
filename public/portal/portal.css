@@ -1,0 +1,43 @@
+:root {
+  color-scheme: dark; --paper: #f5e8d5; --ledger: #d5c4a7; --edge: #65523a;
+  --accent: #f2bf77; --panel: #1c201e; background: #121615; color: var(--paper);
+  font-family: system-ui, sans-serif; font-size: 16px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; }
+a { color: var(--accent); }
+.top { margin: auto; max-width: 1280px; display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:1rem clamp(1rem,4vw,3rem); }
+.top nav { display:flex; gap:1.25rem; flex-wrap:wrap; }
+.top a { text-decoration: none; }
+.brand { color: var(--paper); font: bold 1.35rem Georgia, serif; }
+.portal { max-width: 1280px; margin: 0 auto; display:grid; gap:1rem; grid-template-columns:minmax(0, 1.25fr) minmax(22rem, 1fr); padding: 0 clamp(1rem,4vw,3rem) 3rem; }
+.hero { min-height: 31rem; padding:clamp(1.4rem, 5vw,3rem); display:flex; align-items:flex-end; border:1px solid var(--edge);
+  background: linear-gradient(180deg, rgba(12,16,15,.04) 40%, #0f1514 100%),
+              url('/asset/public/media/png/tile_graufurt-eastgate.png') center center/cover, #26302c; }
+.hero h1 { font: normal clamp(2.55rem,5vw,4.8rem)/.97 Georgia, serif; margin:0; max-width:11ch; }
+.hero p, #message { color: var(--ledger); line-height: 1.6; }
+.panel, .article { background:var(--panel); border:1px solid var(--edge); padding:clamp(1.1rem, 4vw,2.5rem); }
+.panel-heading { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }
+h2 { font:normal 1.8rem/1.14 Georgia, serif; margin:0; }
+#slots { color:var(--accent); white-space:nowrap; }
+form { display:grid; gap:.9rem; margin-top:1.15rem; }
+label { display:grid; gap:.35rem; color:var(--ledger); }
+input, select { padding:.65rem; border:1px solid var(--edge); background:#131816; color:var(--paper); font:inherit; min-width:0; }
+.choices, .providers { display:flex; flex-wrap:wrap; gap:.6rem; }
+.choices label { flex:1 1 5.5rem; }
+button, .providers a { border:1px solid #b2824e; background:var(--accent); color:#23180c; font:inherit; font-weight:650; padding:.65rem .8rem; text-decoration:none; cursor:pointer; }
+button:disabled { opacity:.5; cursor:default; }
+.secondary { background:transparent; color:var(--accent); }
+:focus-visible { outline: 2px solid #9de8d3; outline-offset:3px; }
+.characters { list-style:none; padding:0; display:grid; gap:.55rem; }
+.characters li { display:flex; border-bottom:1px solid var(--edge); gap:.7rem; justify-content:space-between; align-items:center; padding:.65rem 0; }
+.characters small { display:block; color:var(--ledger); margin-top:.25rem; }
+.article { max-width: 70ch; margin: 0 auto 3rem; overflow-wrap:anywhere; line-height:1.65; }
+.article h1, .article h2, .article h3 { font-family:Georgia,serif; }
+.article h2 { margin:1.45rem 0 .55rem; }
+.article img { max-width:100%; }
+.article table { border-collapse:collapse; }
+.article th, .article td { border:1px solid var(--edge); padding:.3rem .6rem; }
+@media (max-width: 800px) { .portal { grid-template-columns:1fr; } .hero { min-height:20rem; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior:auto; } }

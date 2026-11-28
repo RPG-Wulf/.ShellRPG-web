@@ -148,6 +148,15 @@ function setLiveConnectionState(nextState) {
 
 async function ensureSession() {
   if (sessionReady) return;
+  try {
+    const current = await fetchJson("/api/characters");
+    if (current.ok) {
+      sessionReady = true;
+      return;
+    }
+  } catch (_) {
+    // The current browser has no usable cookie. Establish its guest session.
+  }
   const identity = readIdentity();
   if (!identity.deviceId) {
     identity.deviceId = randomId();

@@ -155,10 +155,23 @@ def make_handler(config: WWWConfig, root: Path, *, site=None) -> type[BaseHTTPRe
             self._write_bytes(asset.read_bytes(), guess_content_type(asset), extra_headers={"Cache-Control": "no-store"})
 
         def _serve_cdn_asset(self) -> bool:
-            asset = load_asset_payload(config, root, self.path)
+            request_path = urlsplit(self.path).path
+            defer_png = request_path.endswith(".png") and "image/webp" in self.headers.get("Accept", "")
+            asset = None
+            if defer_png:
+                from shellrpg_www.assets import AssetPayload, normalize_asset_path, resolve_local_asset
+
+                alternate = normalize_asset_path(request_path[:-4] + ".webp", config.asset_proxy_route)
+                local = resolve_local_asset(root, alternate) if alternate else None
+                if local:
+                    asset = AssetPayload(body=local.read_bytes(), content_type="image/webp", source=str(local))
+            if asset is None:
+                asset = load_asset_payload(config, root, self.path)
             if asset is None:
                 return False
-            self._write_bytes(asset.body, asset.content_type, extra_headers={"Cache-Control": "public, max-age=60"})
+            self._write_bytes(asset.body, asset.content_type, extra_headers={
+                "Cache-Control": "public, max-age=300", "Vary": "Accept",
+            })
             return True
 
         def _proxy_request(self) -> None:

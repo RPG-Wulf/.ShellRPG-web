@@ -23,6 +23,30 @@ function assetPath(value) {
   return `/${raw.replace(/^\.?\//, "")}`;
 }
 
+const settlementStage = new Map([
+  ["hamlet", 1], ["village", 2], ["town", 2], ["fortified", 3], ["fortress", 3],
+  ["city", 4], ["capital", 4], ["metropolis", 5], ["imperial", 5],
+]);
+
+function constructionSprite(tile) {
+  if (!tile || tile.visibility_state === "unknown") return "";
+  const category = String(tile.lead_civilization_stage_id || "").toLowerCase();
+  if (tile.settlement_name || tile.terrain === "city" || settlementStage.has(category)) {
+    const level = settlementStage.get(category) ?? (tile.terrain === "city" ? 4 : 1);
+    return "/asset/public/media/png/settlement_" + level + ".png";
+  }
+  const building = String(tile.building || "").toLowerCase();
+  if (!building) return "";
+  const variants = [
+    [/mine|erz|grube/, "iron-mine"], [/holz|lumber/, "lumber-camp"],
+    [/schmied|forge|steel/, "steelworks"], [/garten|herb/, "herb-garden"],
+    [/handel|trade|markt/, "trade-hall"], [/turm|tower|wacht/, "watchtower"],
+    [/festung|fort/, "faction-fortress"],
+  ];
+  const match = variants.find(([pattern]) => pattern.test(building));
+  return "/asset/public/media/png/building_" + (match?.[1] || "faction-outpost") + ".png";
+}
+
 // Ermittelt aus Sprache, Zeit und Action eine weiche Lesart fuer die Dominanz des Center-Focus.
 function centerMood(status) {
   const time = String(status?.time_label || "").toLowerCase();
@@ -73,7 +97,7 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
         biome: tile?.biome || weather?.biome || "",
         terrain: tile?.terrain || weather?.terrain || "",
         visibilityState: tile?.visibility_state || (hidden ? "unknown" : "visible"),
-        sprite: assetPath(tile?.sprite),
+        sprite: constructionSprite(tile) || assetPath(tile?.sprite),
         building: tile?.building || "",
         spawnMilieu: tile?.spawn_milieu || "",
         settlementName: tile?.settlement_name || "",
@@ -102,7 +126,7 @@ export function buildMapShellModel(status, mapTiles = [], weatherMap = null, com
     cells,
     focus: {
       mood,
-      image: assetPath(status?.media_file),
+      image: (focusHasEncounter ? '' : constructionSprite(tileIndex.get(center.x + ',' + center.y))) || assetPath(status?.media_file),
       title: status?.location_label || "Unkartiertes Zentrum",
       subtitle: [
         status?.overlay_message || "Die Lage verdichtet sich im Zentrum dieses Felds.",
@@ -187,7 +211,7 @@ export function renderMapPanel(
       .filter(Boolean)
       .join("\n");
 
-    if (cell.sprite && !cell.current) {
+    if (cell.sprite && !cell.hidden) {
       tile.style.backgroundImage = `linear-gradient(180deg, rgba(5, 6, 9, 0.16), rgba(6, 7, 10, 0.82)), url("${cell.sprite}")`;
     }
 
